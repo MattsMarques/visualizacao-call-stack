@@ -170,18 +170,18 @@ class AppBuscaBinaria:
                 cor_fundo = "#4ade80" # Verde: chamada que está executando agora
                 texto_status = "Executando..."
             else:
-                cor_fundo = "#60a5fa" # Azul: aguardando resposta da filha
+                cor_fundo = "#707070" # Azul: aguardando resposta da filha
                 texto_status = "Aguardando sub-recursão..."
                 
             # Desenha o bloco da memória
             self.canvas_pilha.create_rectangle(x1, y1, x2, y2, fill=cor_fundo, outline="#333", width=2)
             
             # Textos internos do bloco
-            txt_funcao = f"busca_binaria(inicio={dados['inicio']}, fim={dados['fim']})"
+            txt_funcao = f"busca_binaria(inicio={dados['inicio']+1}, fim={dados['fim']+1})"
             self.canvas_pilha.create_text(x1 + 15, y1 + 20, anchor="w", text=txt_funcao, font=("Arial", 11, "bold"), fill="black")
             
             if dados['meio'] is not None:
-                txt_detalhe = f"Meio calculado: índice {dados['meio']} (valor {self.vetor[dados['meio']]})"
+                txt_detalhe = f"Meio calculado: índice {dados['meio']+1} (valor {self.vetor[dados['meio']]})"
             else:
                 txt_detalhe = "Verificando limites..."
             self.canvas_pilha.create_text(x1 + 15, y1 + 40, anchor="w", text=txt_detalhe, font=("Arial", 10), fill="#222")
