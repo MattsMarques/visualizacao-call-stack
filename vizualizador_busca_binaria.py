@@ -181,7 +181,7 @@ class AppBuscaBinaria:
             self.canvas_pilha.create_text(x1 + 15, y1 + 20, anchor="w", text=txt_funcao, font=("Arial", 11, "bold"), fill="black")
             
             if dados['meio'] is not None:
-                txt_detalhe = f"Meio calculado: índice {dados['meio']+1} (valor {self.vetor[dados['meio']]})"
+                txt_detalhe = f"Meio calculado: índice {dados['meio']} (valor {self.vetor[dados['meio']]})"
             else:
                 txt_detalhe = "Verificando limites..."
             self.canvas_pilha.create_text(x1 + 15, y1 + 40, anchor="w", text=txt_detalhe, font=("Arial", 10), fill="#222")
