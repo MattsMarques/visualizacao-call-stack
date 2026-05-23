@@ -9,7 +9,7 @@ def copiar(vetor, inicio, fim):
     v = array.array("i", [0]*tamanho)
     i = 0
     while i < tamanho:
-        v[i] = vetor [inicio+i]
+        v[i] = vetor[inicio+i]
         i+=1
 
     return v
@@ -33,7 +33,7 @@ def merge(ord_esq, tam_esq, ord_dir, tam_dir):
         i += 1
 
     while (j < tam_dir):
-        ord[i+j] = ord_esq[j]
+        ord[i+j] = ord_dir[j]
         j += 1
 
     return ord
@@ -50,7 +50,7 @@ def merge_sort(vetor, fim):
     ord_esq = merge_sort(v_esq, meio)
     ord_dir = merge_sort(v_dir, meio + (fim % 2))
 
-    return merge(ord_esq, meio, ord_dir, meio)
+    return merge(ord_esq, meio, ord_dir, meio + (fim % 2))
     
 
 vetor = array.array("i", [0]*6)
@@ -66,6 +66,8 @@ vetor[5] = 1
 imprimir_vetor(vetor, 6)
 
 print("\n")
-imprimir_vetor(merge_sort(vetor, 6), 6)
+#imprimir_vetor(merge_sort(vetor, 6), 6)
+
+print(merge_sort(vetor, 6))
 
     
