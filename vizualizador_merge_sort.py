@@ -8,10 +8,10 @@ from collections import deque
 # ─────────────────────────────────────────────
 #  CORES & ESTILOS
 # ─────────────────────────────────────────────
-BG        = "#0d1117"
-BG2       = "#161b22"
-BG3       = "#21262d"
-BORDER    = "#30363d"
+BG        = "#ffffff"
+BG2       = "#f1f1f1"
+BG3       = "#f1f1f1"
+BORDER    = "#C1C1C1"
 GREEN     = "#3fb950"
 GREEN_DIM = "#1a4a25"
 BLUE      = "#58a6ff"
