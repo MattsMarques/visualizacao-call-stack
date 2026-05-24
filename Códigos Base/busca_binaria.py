@@ -1,6 +1,6 @@
 import array
 
-vetor = array.array("i", [0]*6)
+vetor = array.array("i", [0]*7)
 
 vetor[0] = 1
 vetor[1] = 3
@@ -8,27 +8,28 @@ vetor[2] = 4
 vetor[3] = 6
 vetor[4] = 9
 vetor[5] = 13
+vetor[6] = 14
 
 
 print(vetor)
 
-def busca_binaria(vetor, numero, fim, inicio):
+def busca_binaria(vetor, numero, inicio, fim):
     meio = (inicio+fim)//2
     
     if vetor[meio]==numero:
         return meio
         
     elif vetor[meio] < numero:
-        return busca_binaria(vetor, numero, fim, meio+1)
+        return busca_binaria(vetor, numero, meio+1, fim)
         
     elif vetor[meio] > numero:
-        return busca_binaria(vetor, numero, meio-1, inicio)    
+        return busca_binaria(vetor, numero, inicio, meio-1)    
         
     elif inicio > fim:
         return -1
         
 
-print(busca_binaria(vetor, 9, 6, 0))
+print(busca_binaria(vetor, 14, 0, 7))
         
 
         
