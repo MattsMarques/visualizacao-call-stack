@@ -1,6 +1,6 @@
 def fact(num):
-    if num == 2:
-        return 2
+    if num == 0:
+        return 1
 
     return num*fact(num-1)
 
