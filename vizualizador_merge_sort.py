@@ -1,677 +1,756 @@
+"""
+Visualizador de Call Stack — Merge Sort
+Fiel ao código original: merge_sort, copiar, merge
+Design: light, limpo, call stack como pilha literal
+"""
+
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk
 import array
-import time
-import threading
-from collections import deque
 
-# ─────────────────────────────────────────────
-#  CORES & ESTILOS
-# ─────────────────────────────────────────────
-BG        = "#ffffff"
-BG2       = "#f1f1f1"
-BG3       = "#f1f1f1"
-BORDER    = "#C1C1C1"
-GREEN     = "#3fb950"
-GREEN_DIM = "#1a4a25"
-BLUE      = "#58a6ff"
-BLUE_DIM  = "#1a3a6a"
-ORANGE    = "#f0883e"
-ORANGE_DIM= "#4a2c0a"
-PURPLE    = "#bc8cff"
-PURPLE_DIM= "#3a1f6a"
-RED       = "#f85149"
-RED_DIM   = "#4a1010"
-YELLOW    = "#e3b341"
-CYAN      = "#39d0d8"
-TEXT      = "#e6edf3"
-TEXT_DIM  = "#8b949e"
-TEXT_MUTED= "#484f58"
+# ══════════════════════════════════════════════════════════════
+#  PALETA  (light, editorial, monoespaçado)
+# ══════════════════════════════════════════════════════════════
+FUNDO        = "#F7F6F2"      # creme quase branco
+PAPEL        = "#FFFFFF"
+BORDA        = "#E0DDD6"
+BORDA_FORTE  = "#B8B4AC"
 
-# ─────────────────────────────────────────────
-#  INSTRUMENTAÇÃO DO MERGE SORT
-# ─────────────────────────────────────────────
-class MergeSortTracer:
-    """Executa o merge_sort e grava cada evento em order."""
-    def __init__(self, vetor_inicial):
-        self.events = []
-        self.call_id_counter = 0
+CINZA_TEXTO  = "#2C2A25"
+CINZA_MEDIO  = "#6B6760"
+CINZA_LEVE   = "#A8A49E"
+CINZA_BG     = "#EEECE7"
+
+# cores de destaque por tipo de evento
+COR_CALL   = "#1A56DB"   # azul
+COR_COPIAR = "#7E3AF2"   # roxo
+COR_BASE   = "#0E9F6E"   # verde
+COR_MERGE  = "#E3A008"   # âmbar
+COR_RET    = "#C81E1E"   # vermelho
+
+COR_CALL_BG   = "#EBF5FF"
+COR_COPIAR_BG = "#F5F3FF"
+COR_BASE_BG   = "#F3FAF7"
+COR_MERGE_BG  = "#FFFBEB"
+COR_RET_BG    = "#FDF2F2"
+
+FONTE_MONO = "Courier New"
+FONTE_SANS = "Georgia"
+
+
+# ══════════════════════════════════════════════════════════════
+#  TRACER — instrumenta o merge_sort original passo a passo
+# ══════════════════════════════════════════════════════════════
+class Tracer:
+    """
+    Registra cada passo da execução do merge_sort como uma lista de eventos.
+    Cada evento representa exatamente uma linha lógica do código original.
+    """
+    def __init__(self, vetor_inicial: list[int]):
+        self.eventos: list[dict] = []
+        self._id = 0
         v = array.array("i", vetor_inicial)
-        self._merge_sort(v, len(v), parent_id=None, depth=0, side="root")
+        self._merge_sort(v, len(v), pai=None, profundidade=0, lado="raiz")
 
-    def _new_id(self):
-        self.call_id_counter += 1
-        return self.call_id_counter
+    def _novo_id(self) -> int:
+        self._id += 1
+        return self._id
 
-    def _emit(self, kind, **kwargs):
-        self.events.append({"kind": kind, **kwargs})
+    def _emit(self, tipo: str, **kwargs):
+        self.eventos.append({"tipo": tipo, **kwargs})
 
-    def _merge_sort(self, vetor, fim, parent_id, depth, side):
-        call_id = self._new_id()
-        v_list  = list(vetor)
+    # ── copiar ──────────────────────────────────────────────
+    def _copiar(self, vetor: array.array, inicio: int, fim: int) -> array.array:
+        tamanho = fim - inicio
+        v = array.array("i", [0] * tamanho)
+        i = 0
+        while i < tamanho:
+            v[i] = vetor[inicio + i]
+            i += 1
+        return v
 
-        self._emit("CALL",
-                   call_id=call_id, parent_id=parent_id,
-                   depth=depth, side=side,
-                   vetor=v_list, fim=fim)
-
-        if fim <= 1:
-            self._emit("BASE_CASE",
-                       call_id=call_id, depth=depth,
-                       vetor=v_list)
-            self._emit("RETURN",
-                       call_id=call_id, parent_id=parent_id,
-                       depth=depth, result=v_list)
-            return vetor
-
-        meio  = fim // 2
-        v_esq = array.array("i", vetor[0:meio])
-        v_dir = array.array("i", vetor[meio:fim])
-
-        self._emit("SPLIT",
-                   call_id=call_id, depth=depth,
-                   esq=list(v_esq), dir=list(v_dir), meio=meio)
-
-        ord_esq = self._merge_sort(v_esq, meio,         parent_id=call_id, depth=depth+1, side="esq")
-        ord_dir = self._merge_sort(v_dir, meio+(fim%2), parent_id=call_id, depth=depth+1, side="dir")
-
-        # ---- merge step ----
-        tam_esq = meio
-        tam_dir = meio + (fim % 2)
-        merged  = array.array("i", [0]*(tam_esq + tam_dir))
+    # ── merge ───────────────────────────────────────────────
+    def _merge(self, ord_esq, tam_esq, ord_dir, tam_dir,
+               call_id: int, profundidade: int):
+        resultado = array.array("i", [0] * (tam_esq + tam_dir))
         i, j = 0, 0
-        steps = []
+        passos: list[dict] = []
+
         while i < tam_esq and j < tam_dir:
             if ord_esq[i] < ord_dir[j]:
-                merged[i+j] = ord_esq[i]
-                steps.append({"picked": "esq", "idx_esq": i, "idx_dir": j,
-                               "value": ord_esq[i], "merged_so_far": list(merged[:i+j+1])})
+                resultado[i + j] = ord_esq[i]
+                passos.append({"origem": "esq", "valor": ord_esq[i], "pos": i + j,
+                                "i": i, "j": j})
                 i += 1
             else:
-                merged[i+j] = ord_dir[j]
-                steps.append({"picked": "dir", "idx_esq": i, "idx_dir": j,
-                               "value": ord_dir[j], "merged_so_far": list(merged[:i+j+1])})
+                resultado[i + j] = ord_dir[j]
+                passos.append({"origem": "dir", "valor": ord_dir[j], "pos": i + j,
+                                "i": i, "j": j})
                 j += 1
+
         while i < tam_esq:
-            merged[i+j] = ord_esq[i]
-            steps.append({"picked": "esq_rem", "idx_esq": i, "idx_dir": j,
-                           "value": ord_esq[i], "merged_so_far": list(merged[:i+j+1])})
+            resultado[i + j] = ord_esq[i]
+            passos.append({"origem": "esq_resto", "valor": ord_esq[i],
+                           "pos": i + j, "i": i, "j": j})
             i += 1
         while j < tam_dir:
-            merged[i+j] = ord_dir[j]
-            steps.append({"picked": "dir_rem", "idx_esq": i, "idx_dir": j,
-                           "value": ord_dir[j], "merged_so_far": list(merged[:i+j+1])})
+            resultado[i + j] = ord_dir[j]
+            passos.append({"origem": "dir_resto", "valor": ord_dir[j],
+                           "pos": i + j, "i": i, "j": j})
             j += 1
 
-        result = list(merged)
+        return resultado, passos
+
+    # ── merge_sort ───────────────────────────────────────────
+    def _merge_sort(self, vetor: array.array, fim: int,
+                    pai, profundidade: int, lado: str):
+        call_id = self._novo_id()
+
+        # ── CHAMADA ──────────────────────────────────────────
+        self._emit("CHAMADA",
+                   call_id=call_id, pai=pai,
+                   profundidade=profundidade, lado=lado,
+                   vetor=list(vetor), fim=fim)
+
+        # ── CASO BASE ────────────────────────────────────────
+        if fim <= 1:
+            self._emit("CASO_BASE",
+                       call_id=call_id, profundidade=profundidade,
+                       vetor=list(vetor))
+            self._emit("RETORNO",
+                       call_id=call_id, pai=pai,
+                       profundidade=profundidade,
+                       resultado=list(vetor),
+                       motivo="caso_base")
+            return vetor
+
+        meio = fim // 2
+
+        # ── COPIAR ESQ ───────────────────────────────────────
+        v_esq = self._copiar(vetor, 0, meio)
+        self._emit("COPIAR",
+                   call_id=call_id, profundidade=profundidade,
+                   origem=list(vetor), inicio=0, fim_copia=meio,
+                   resultado=list(v_esq), variavel="v_esq",
+                   meio=meio)
+
+        # ── COPIAR DIR ───────────────────────────────────────
+        v_dir = self._copiar(vetor, meio, fim)
+        self._emit("COPIAR",
+                   call_id=call_id, profundidade=profundidade,
+                   origem=list(vetor), inicio=meio, fim_copia=fim,
+                   resultado=list(v_dir), variavel="v_dir",
+                   meio=meio)
+
+        # ── RECURSÃO ESQ ─────────────────────────────────────
+        ord_esq = self._merge_sort(v_esq, meio,
+                                   pai=call_id, profundidade=profundidade + 1,
+                                   lado="esq")
+
+        # ── RECURSÃO DIR ─────────────────────────────────────
+        ord_dir = self._merge_sort(v_dir, meio + (fim % 2),
+                                   pai=call_id, profundidade=profundidade + 1,
+                                   lado="dir")
+
+        # ── MERGE ────────────────────────────────────────────
+        tam_esq = meio
+        tam_dir = meio + (fim % 2)
+        merged, passos = self._merge(ord_esq, tam_esq, ord_dir, tam_dir,
+                                     call_id, profundidade)
+
         self._emit("MERGE",
-                   call_id=call_id, depth=depth,
+                   call_id=call_id, profundidade=profundidade,
                    esq=list(ord_esq), dir=list(ord_dir),
-                   result=result, steps=steps)
-        self._emit("RETURN",
-                   call_id=call_id, parent_id=parent_id,
-                   depth=depth, result=result)
+                   resultado=list(merged), passos=passos)
+
+        # ── RETORNO ──────────────────────────────────────────
+        self._emit("RETORNO",
+                   call_id=call_id, pai=pai,
+                   profundidade=profundidade,
+                   resultado=list(merged),
+                   motivo="merge")
         return merged
 
 
-# ─────────────────────────────────────────────
-#  JANELA PRINCIPAL
-# ─────────────────────────────────────────────
-class MergeSortVisualizer(tk.Tk):
+# ══════════════════════════════════════════════════════════════
+#  WIDGET DE CÉLULA (um número do vetor)
+# ══════════════════════════════════════════════════════════════
+def criar_celulas(pai_frame, valores: list[int],
+                  cor_fundo="#FFFFFF", cor_borda="#C0BCBA",
+                  cor_texto="#2C2A25", tamanho=28) -> list:
+    """Retorna lista de (frame, label) para cada valor."""
+    celulas = []
+    for v in valores:
+        f = tk.Frame(pai_frame, bg=cor_fundo,
+                     highlightbackground=cor_borda,
+                     highlightthickness=1,
+                     width=tamanho, height=tamanho)
+        f.pack_propagate(False)
+        f.pack(side="left", padx=1)
+        lbl = tk.Label(f, text=str(v), bg=cor_fundo, fg=cor_texto,
+                       font=(FONTE_MONO, 9, "bold"))
+        lbl.place(relx=0.5, rely=0.5, anchor="center")
+        celulas.append((f, lbl))
+    return celulas
+
+
+# ══════════════════════════════════════════════════════════════
+#  FRAME DE CHAMADA NA PILHA
+# ══════════════════════════════════════════════════════════════
+class FrameChamada(tk.Frame):
+    """
+    Representa um frame na call stack — um retângulo com:
+    - cabeçalho: nome da função + assinatura
+    - corpo: estado interno (variáveis locais visuais)
+    - status: linha que descreve o que está acontecendo agora
+    """
+    LARGURA_INDENT = 20   # px de recuo por nível de profundidade
+
+    def __init__(self, pai, call_id: int, profundidade: int,
+                 lado: str, vetor: list[int], fim: int, **kwargs):
+        super().__init__(pai, bg=PAPEL,
+                         highlightbackground=BORDA,
+                         highlightthickness=1, **kwargs)
+        self.call_id     = call_id
+        self.profundidade = profundidade
+        self.lado        = lado
+        self._vetor      = vetor
+        self._fim        = fim
+
+        # ── cabeçalho ──────────────────────────────────────
+        cab = tk.Frame(self, bg=COR_CALL_BG,
+                       highlightbackground=BORDA, highlightthickness=0)
+        cab.pack(fill="x")
+
+        lado_badge = {"raiz": "●", "esq": "◀", "dir": "▶"}.get(lado, lado)
+        lado_cor   = {"raiz": CINZA_MEDIO, "esq": COR_CALL, "dir": COR_COPIAR
+                      }.get(lado, CINZA_MEDIO)
+
+        tk.Label(cab, text=f" {lado_badge} ", bg=COR_CALL_BG,
+                 fg=lado_cor, font=(FONTE_MONO, 9, "bold")).pack(side="left")
+
+        sig = f"merge_sort(vetor={_fmt_vetor(vetor)}, fim={fim})"
+        tk.Label(cab, text=sig, bg=COR_CALL_BG, fg=COR_CALL,
+                 font=(FONTE_MONO, 8, "bold"), anchor="w").pack(side="left", padx=2)
+
+        tk.Label(cab, text=f"prof. {profundidade}", bg=COR_CALL_BG,
+                 fg=CINZA_LEVE, font=(FONTE_MONO, 7)).pack(side="right", padx=6)
+
+        # ── corpo: variáveis locais ─────────────────────────
+        self._corpo = tk.Frame(self, bg=PAPEL, padx=8, pady=5)
+        self._corpo.pack(fill="x")
+
+        # linha das células do vetor de entrada
+        linha_v = tk.Frame(self._corpo, bg=PAPEL)
+        linha_v.pack(anchor="w", pady=(0, 3))
+        tk.Label(linha_v, text="vetor → ", bg=PAPEL, fg=CINZA_MEDIO,
+                 font=(FONTE_MONO, 8)).pack(side="left")
+        self._celulas_vetor = criar_celulas(linha_v, vetor)
+
+        # linha de variáveis (meio, v_esq, v_dir)
+        self._linha_vars = tk.Frame(self._corpo, bg=PAPEL)
+        self._linha_vars.pack(anchor="w", fill="x")
+
+        # status
+        self._status = tk.Label(self._corpo, text="aguardando…",
+                                 bg=PAPEL, fg=CINZA_LEVE,
+                                 font=(FONTE_MONO, 8), anchor="w")
+        self._status.pack(fill="x", pady=(3, 0))
+
+        # guarda widgets dinâmicos para atualização
+        self._vars_widgets: dict[str, tk.Widget] = {}
+
+    # ── API pública ────────────────────────────────────────
+    def set_status(self, texto: str, cor: str = CINZA_MEDIO):
+        self._status.configure(text=texto, fg=cor)
+
+    def set_borda(self, cor: str):
+        self.configure(highlightbackground=cor)
+
+    def mostrar_meio(self, meio: int):
+        self._set_var_label("meio", f"meio = {meio}", CINZA_MEDIO)
+
+    def mostrar_v_esq(self, valores: list[int], destaque=False):
+        self._set_var_celulas("v_esq", valores,
+                              cor=COR_CALL if destaque else CINZA_LEVE,
+                              bg=COR_CALL_BG if destaque else CINZA_BG)
+
+    def mostrar_v_dir(self, valores: list[int], destaque=False):
+        self._set_var_celulas("v_dir", valores,
+                              cor=COR_COPIAR if destaque else CINZA_LEVE,
+                              bg=COR_COPIAR_BG if destaque else CINZA_BG)
+
+    def mostrar_resultado(self, valores: list[int]):
+        """Substitui as células do vetor pelo resultado ordenado."""
+        for w, _ in self._celulas_vetor:
+            w.destroy()
+        linha = None
+        for w in self._corpo.winfo_children():
+            if isinstance(w, tk.Frame):
+                linha = w
+                break
+        if not linha:
+            return
+        # recriar na linha do vetor
+        for widget in linha.winfo_children():
+            if isinstance(widget, tk.Frame):
+                widget.destroy()
+        self._celulas_vetor = criar_celulas(
+            linha, valores,
+            cor_fundo="#F0FDF4", cor_borda="#22C55E", cor_texto="#15803D")
+
+    def dimmer(self):
+        """Esmaece o frame após retorno."""
+        self.configure(highlightbackground=BORDA)
+        self._status.configure(fg=CINZA_LEVE)
+
+    # ── helpers internos ───────────────────────────────────
+    def _set_var_label(self, chave: str, texto: str, cor: str):
+        if chave in self._vars_widgets:
+            self._vars_widgets[chave].configure(text=texto, fg=cor)
+        else:
+            lbl = tk.Label(self._linha_vars, text=texto, bg=PAPEL, fg=cor,
+                           font=(FONTE_MONO, 8))
+            lbl.pack(side="left", padx=(0, 10))
+            self._vars_widgets[chave] = lbl
+
+    def _set_var_celulas(self, chave: str, valores: list[int],
+                         cor: str, bg: str):
+        if chave in self._vars_widgets:
+            self._vars_widgets[chave].destroy()
+
+        container = tk.Frame(self._linha_vars, bg=PAPEL)
+        container.pack(side="left", padx=(0, 10))
+        tk.Label(container, text=f"{chave} → ", bg=PAPEL, fg=cor,
+                 font=(FONTE_MONO, 8)).pack(side="left")
+        criar_celulas(container, valores, cor_fundo=bg,
+                      cor_borda=cor, cor_texto=cor)
+        self._vars_widgets[chave] = container
+
+
+# ══════════════════════════════════════════════════════════════
+#  UTILITÁRIOS
+# ══════════════════════════════════════════════════════════════
+def _fmt_vetor(v: list) -> str:
+    return "[" + ", ".join(str(x) for x in v) + "]"
+
+def _descricao_evento(ev: dict) -> tuple[str, str, str]:
+    """Retorna (tipo_label, descricao_curta, cor)."""
+    t = ev["tipo"]
+    p = ev.get("profundidade", 0)
+    ind = "  " * p
+
+    if t == "CHAMADA":
+        lado = {"raiz": "raiz", "esq": "lado esquerdo", "dir": "lado direito"
+                }.get(ev["lado"], ev["lado"])
+        return ("CHAMADA", f"{ind}merge_sort({_fmt_vetor(ev['vetor'])}, fim={ev['fim']})  ← {lado}", COR_CALL)
+
+    if t == "CASO_BASE":
+        return ("BASE", f"{ind}caso base: fim ≤ 1, retorna {_fmt_vetor(ev['vetor'])} sem dividir", COR_BASE)
+
+    if t == "COPIAR":
+        return ("COPIAR",
+                f"{ind}copiar(vetor, {ev['inicio']}, {ev['fim_copia']})  →  {ev['variavel']} = {_fmt_vetor(ev['resultado'])}",
+                COR_COPIAR)
+
+    if t == "MERGE":
+        return ("MERGE",
+                f"{ind}merge({_fmt_vetor(ev['esq'])}, {_fmt_vetor(ev['dir'])})  →  {_fmt_vetor(ev['resultado'])}",
+                COR_MERGE)
+
+    if t == "RETORNO":
+        mot = "caso base" if ev.get("motivo") == "caso_base" else "após merge"
+        return ("RETORNO",
+                f"{ind}retorna {_fmt_vetor(ev['resultado'])}  ({mot})",
+                COR_RET)
+
+    return (t, str(ev), CINZA_MEDIO)
+
+
+# ══════════════════════════════════════════════════════════════
+#  APLICATIVO PRINCIPAL
+# ══════════════════════════════════════════════════════════════
+class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Merge Sort — Visualizador de Call Stack")
-        self.configure(bg=BG)
+        self.title("Visualizador de Call Stack — Merge Sort")
+        self.configure(bg=FUNDO)
         self.resizable(True, True)
-        self.geometry("1300x800")
+        self.geometry("1180x740")
+        self.minsize(900, 600)
 
-        self._initial_data = [6, 5, 12, 10, 9, 1]
-        self.speed_ms  = 700          # ms entre eventos
-        self.events    = []
-        self.event_idx = 0
-        self.playing   = False
-        self._after_id = None
+        self._dados_default = [6, 5, 12, 10, 9, 1]
+        self._eventos: list[dict] = []
+        self._passo_atual = 0
+        self._frames_pilha: dict[int, FrameChamada] = {}   # call_id → widget
+        self._pilha_ativa: list[int] = []                  # ids em execução
 
-        # call_id → frame widget
-        self.frame_widgets: dict[int, tk.Frame] = {}
-        # stack of active call_ids (for indentation)
-        self.active_stack: list[int] = []
-        # call_id → metadata
-        self.call_meta: dict[int, dict] = {}
+        self._construir_ui()
+        self._carregar(self._dados_default)
 
-        self._build_ui()
-        self._load_data(self._initial_data)
+    # ══ CONSTRUÇÃO DA UI ═══════════════════════════════════
+    def _construir_ui(self):
+        # ── barra superior ─────────────────────────────────
+        topo = tk.Frame(self, bg=PAPEL,
+                        highlightbackground=BORDA, highlightthickness=1)
+        topo.pack(fill="x", side="top")
 
-    # ─── UI LAYOUT ───────────────────────────
-    def _build_ui(self):
-        # ── top bar ──
-        topbar = tk.Frame(self, bg=BG, pady=6, padx=12)
-        topbar.pack(fill="x", side="top")
+        tk.Label(topo, text="Merge Sort", bg=PAPEL, fg=CINZA_TEXTO,
+                 font=(FONTE_SANS, 13, "bold"), padx=16, pady=10
+                 ).pack(side="left")
+        tk.Label(topo, text="visualizador de call stack",
+                 bg=PAPEL, fg=CINZA_LEVE,
+                 font=(FONTE_SANS, 10, "italic")).pack(side="left")
 
-        tk.Label(topbar, text="⟨ merge_sort ⟩  call stack visualizer",
-                 bg=BG, fg=GREEN, font=("Courier New", 13, "bold")).pack(side="left")
+        direita_topo = tk.Frame(topo, bg=PAPEL)
+        direita_topo.pack(side="right", padx=12)
 
-        # input + reload
-        right = tk.Frame(topbar, bg=BG)
-        right.pack(side="right")
-        tk.Label(right, text="vetor:", bg=BG, fg=TEXT_DIM,
-                 font=("Courier New", 10)).pack(side="left", padx=(0,4))
-        self.input_var = tk.StringVar(value="6,5,12,10,9,1")
-        entry = tk.Entry(right, textvariable=self.input_var, bg=BG3, fg=TEXT,
-                         insertbackground=TEXT, relief="flat", bd=0,
-                         font=("Courier New", 10), width=22,
-                         highlightthickness=1, highlightbackground=BORDER)
-        entry.pack(side="left", padx=4)
-        tk.Button(right, text="↺ Recarregar", bg=BG3, fg=CYAN, relief="flat",
-                  font=("Courier New", 9, "bold"), cursor="hand2",
-                  command=self._reload, padx=8).pack(side="left", padx=4)
+        tk.Label(direita_topo, text="vetor:", bg=PAPEL, fg=CINZA_MEDIO,
+                 font=(FONTE_MONO, 9)).pack(side="left", padx=(0, 4))
 
-        sep = tk.Frame(self, bg=BORDER, height=1)
-        sep.pack(fill="x")
+        self._var_entrada = tk.StringVar(value="6,5,12,10,9,1")
+        entrada = tk.Entry(direita_topo, textvariable=self._var_entrada,
+                           font=(FONTE_MONO, 9), bg=CINZA_BG,
+                           fg=CINZA_TEXTO, relief="flat", bd=0,
+                           highlightthickness=1, highlightbackground=BORDA,
+                           width=20, insertbackground=CINZA_TEXTO)
+        entrada.pack(side="left", padx=4, ipady=3)
 
-        # ── main pane ──
-        main = tk.Frame(self, bg=BG)
-        main.pack(fill="both", expand=True)
+        tk.Button(direita_topo, text="Recarregar",
+                  font=(FONTE_MONO, 8), bg=FUNDO, fg=CINZA_TEXTO,
+                  relief="flat", cursor="hand2", padx=8, pady=3,
+                  highlightbackground=BORDA, highlightthickness=1,
+                  command=self._recarregar).pack(side="left", padx=4)
 
-        # left: call stack
-        left_wrap = tk.Frame(main, bg=BG, width=520)
-        left_wrap.pack(side="left", fill="both", expand=True, padx=(0,0))
-        left_wrap.pack_propagate(False)
+        # ── área principal ─────────────────────────────────
+        principal = tk.Frame(self, bg=FUNDO)
+        principal.pack(fill="both", expand=True)
 
-        tk.Label(left_wrap, text="CALL  STACK", bg=BG, fg=TEXT_MUTED,
-                 font=("Courier New", 9, "bold"), anchor="w",
-                 padx=12, pady=6).pack(fill="x")
+        # coluna esquerda: pilha
+        coluna_esq = tk.Frame(principal, bg=FUNDO)
+        coluna_esq.pack(side="left", fill="both", expand=True, padx=(12, 6), pady=12)
 
-        self.stack_canvas = tk.Canvas(left_wrap, bg=BG, highlightthickness=0)
-        self.stack_vsb    = tk.Scrollbar(left_wrap, orient="vertical",
-                                         command=self.stack_canvas.yview,
-                                         bg=BG3, troughcolor=BG)
-        self.stack_canvas.configure(yscrollcommand=self.stack_vsb.set)
-        self.stack_vsb.pack(side="right", fill="y")
-        self.stack_canvas.pack(fill="both", expand=True)
+        cab_pilha = tk.Frame(coluna_esq, bg=FUNDO)
+        cab_pilha.pack(fill="x", pady=(0, 6))
+        tk.Label(cab_pilha, text="PILHA DE CHAMADAS", bg=FUNDO,
+                 fg=CINZA_LEVE, font=(FONTE_MONO, 8, "bold")).pack(side="left")
+        self._lbl_profundidade = tk.Label(cab_pilha, text="", bg=FUNDO,
+                                           fg=CINZA_LEVE, font=(FONTE_MONO, 8))
+        self._lbl_profundidade.pack(side="right")
 
-        self.stack_inner = tk.Frame(self.stack_canvas, bg=BG)
-        self._stack_window = self.stack_canvas.create_window(
-            (0, 0), window=self.stack_inner, anchor="nw")
-        self.stack_inner.bind("<Configure>", self._on_stack_configure)
-        self.stack_canvas.bind("<Configure>", self._on_canvas_resize)
+        # canvas scrollável para a pilha
+        self._canvas_pilha = tk.Canvas(coluna_esq, bg=FUNDO,
+                                       highlightthickness=0)
+        vsb = tk.Scrollbar(coluna_esq, orient="vertical",
+                           command=self._canvas_pilha.yview,
+                           bg=CINZA_BG)
+        self._canvas_pilha.configure(yscrollcommand=vsb.set)
+        vsb.pack(side="right", fill="y")
+        self._canvas_pilha.pack(fill="both", expand=True)
 
-        # right pane: log + controls
-        right_pane = tk.Frame(main, bg=BG2, width=380)
-        right_pane.pack(side="right", fill="both", padx=0)
-        right_pane.pack_propagate(False)
+        self._frame_pilha_interno = tk.Frame(self._canvas_pilha, bg=FUNDO)
+        self._win_pilha = self._canvas_pilha.create_window(
+            (0, 0), window=self._frame_pilha_interno, anchor="nw")
 
-        # event log
-        tk.Label(right_pane, text="LOG  DE  EVENTOS", bg=BG2, fg=TEXT_MUTED,
-                 font=("Courier New", 9, "bold"), anchor="w",
-                 padx=12, pady=6).pack(fill="x")
+        self._frame_pilha_interno.bind("<Configure>", self._ao_redimensionar_pilha)
+        self._canvas_pilha.bind("<Configure>", self._ao_redimensionar_canvas)
 
-        log_frame = tk.Frame(right_pane, bg=BG2)
-        log_frame.pack(fill="both", expand=True, padx=8, pady=(0,4))
+        # coluna direita: log + controles
+        coluna_dir = tk.Frame(principal, bg=FUNDO, width=340)
+        coluna_dir.pack(side="right", fill="y", padx=(6, 12), pady=12)
+        coluna_dir.pack_propagate(False)
 
-        self.log_text = tk.Text(log_frame, bg=BG, fg=TEXT_DIM, relief="flat",
-                                font=("Courier New", 9), wrap="word",
-                                state="disabled", bd=0,
-                                highlightthickness=1, highlightbackground=BORDER)
-        log_vsb = tk.Scrollbar(log_frame, command=self.log_text.yview,
-                               bg=BG3, troughcolor=BG)
-        self.log_text.configure(yscrollcommand=log_vsb.set)
-        log_vsb.pack(side="right", fill="y")
-        self.log_text.pack(fill="both", expand=True)
+        # ── log de eventos ─────────────────────────────────
+        tk.Label(coluna_dir, text="LOG DE EVENTOS", bg=FUNDO,
+                 fg=CINZA_LEVE, font=(FONTE_MONO, 8, "bold"),
+                 anchor="w").pack(fill="x", pady=(0, 4))
 
-        # colour tags for log
-        self.log_text.tag_configure("call",    foreground=BLUE)
-        self.log_text.tag_configure("base",    foreground=YELLOW)
-        self.log_text.tag_configure("split",   foreground=ORANGE)
-        self.log_text.tag_configure("merge",   foreground=GREEN)
-        self.log_text.tag_configure("ret",     foreground=PURPLE)
-        self.log_text.tag_configure("dim",     foreground=TEXT_MUTED)
-        self.log_text.tag_configure("current", foreground=TEXT,
-                                    background="#1c2a1c")
+        frame_log = tk.Frame(coluna_dir, bg=PAPEL,
+                             highlightbackground=BORDA, highlightthickness=1)
+        frame_log.pack(fill="both", expand=True)
 
-        sep2 = tk.Frame(right_pane, bg=BORDER, height=1)
-        sep2.pack(fill="x", padx=8)
+        self._log = tk.Text(frame_log, bg=PAPEL, fg=CINZA_MEDIO,
+                            font=(FONTE_MONO, 8), relief="flat", bd=0,
+                            state="disabled", wrap="word", cursor="arrow",
+                            padx=8, pady=6)
+        vsb_log = tk.Scrollbar(frame_log, command=self._log.yview,
+                               bg=CINZA_BG)
+        self._log.configure(yscrollcommand=vsb_log.set)
+        vsb_log.pack(side="right", fill="y")
+        self._log.pack(fill="both", expand=True)
 
-        # progress bar area
-        prog_area = tk.Frame(right_pane, bg=BG2, padx=12, pady=6)
-        prog_area.pack(fill="x")
+        # tags de cor no log
+        for tipo, cor in [("CHAMADA", COR_CALL), ("BASE", COR_BASE),
+                           ("COPIAR", COR_COPIAR), ("MERGE", COR_MERGE),
+                           ("RETORNO", COR_RET), ("dim", CINZA_LEVE)]:
+            self._log.tag_configure(tipo, foreground=cor)
+        self._log.tag_configure("destaque", background="#FFF9C4",
+                                foreground=CINZA_TEXTO)
+        self._log.tag_configure("atual_linha", background="#EBF5FF")
 
-        self.progress_var = tk.DoubleVar()
-        style = ttk.Style(self)
-        style.theme_use("clam")
-        style.configure("custom.Horizontal.TProgressbar",
-                         troughcolor=BG3, background=GREEN,
-                         bordercolor=BG2, lightcolor=GREEN, darkcolor=GREEN,
-                         thickness=6)
-        self.progress_bar = ttk.Progressbar(prog_area, variable=self.progress_var,
-                                             style="custom.Horizontal.TProgressbar",
-                                             maximum=100)
-        self.progress_bar.pack(fill="x")
+        # ── separador ──────────────────────────────────────
+        tk.Frame(coluna_dir, bg=BORDA, height=1).pack(fill="x", pady=8)
 
-        self.step_label = tk.Label(prog_area, text="evento 0 / 0",
-                                   bg=BG2, fg=TEXT_MUTED,
-                                   font=("Courier New", 8))
-        self.step_label.pack(anchor="e")
-
-        sep3 = tk.Frame(right_pane, bg=BORDER, height=1)
-        sep3.pack(fill="x", padx=8)
-
-        # speed slider
-        speed_area = tk.Frame(right_pane, bg=BG2, padx=12, pady=6)
-        speed_area.pack(fill="x")
-        tk.Label(speed_area, text="velocidade", bg=BG2, fg=TEXT_MUTED,
-                 font=("Courier New", 8)).pack(anchor="w")
-        self.speed_var = tk.IntVar(value=700)
-        speed_sl = tk.Scale(speed_area, from_=100, to=2000, orient="horizontal",
-                            variable=self.speed_var, bg=BG2, fg=TEXT_DIM,
-                            troughcolor=BG3, highlightthickness=0,
-                            sliderrelief="flat", showvalue=False,
-                            command=lambda v: setattr(self, "speed_ms", int(v)))
-        speed_sl.pack(fill="x")
-        speed_labels = tk.Frame(speed_area, bg=BG2)
-        speed_labels.pack(fill="x")
-        tk.Label(speed_labels, text="rápido", bg=BG2, fg=TEXT_MUTED,
-                 font=("Courier New", 7)).pack(side="left")
-        tk.Label(speed_labels, text="lento", bg=BG2, fg=TEXT_MUTED,
-                 font=("Courier New", 7)).pack(side="right")
-
-        sep4 = tk.Frame(right_pane, bg=BORDER, height=1)
-        sep4.pack(fill="x", padx=8)
-
-        # playback controls
-        ctrl = tk.Frame(right_pane, bg=BG2, pady=10)
-        ctrl.pack(fill="x")
-
-        btn_cfg = dict(bg=BG3, fg=TEXT, relief="flat",
-                       font=("Courier New", 12), cursor="hand2",
-                       width=3, pady=4, padx=6)
-
-        self.btn_prev = tk.Button(ctrl, text="⏮", **btn_cfg,
-                                  command=self._step_back_many)
-        self.btn_prev.pack(side="left", padx=(12,2))
-
-        self.btn_step_back = tk.Button(ctrl, text="◀", **btn_cfg,
-                                       command=self._step_back)
-        self.btn_step_back.pack(side="left", padx=2)
-
-        self.btn_play = tk.Button(ctrl, text="▶", bg=GREEN_DIM, fg=GREEN,
-                                  relief="flat", font=("Courier New", 12, "bold"),
-                                  cursor="hand2", width=3, pady=4, padx=6,
-                                  command=self._toggle_play)
-        self.btn_play.pack(side="left", padx=2)
-
-        self.btn_step = tk.Button(ctrl, text="▶|", **btn_cfg,
-                                  command=self._step_forward)
-        self.btn_step.pack(side="left", padx=2)
-
-        self.btn_next = tk.Button(ctrl, text="⏭", **btn_cfg,
-                                  command=self._step_forward_many)
-        self.btn_next.pack(side="left", padx=2)
-
-        # legend
-        leg = tk.Frame(right_pane, bg=BG2, padx=12, pady=8)
-        leg.pack(fill="x", side="bottom")
-        tk.Label(leg, text="LEGENDA", bg=BG2, fg=TEXT_MUTED,
-                 font=("Courier New", 8, "bold")).pack(anchor="w")
-        legend_items = [
-            (BLUE,   "CALL  — nova chamada recursiva"),
-            (YELLOW, "BASE  — caso base (fim ≤ 1)"),
-            (ORANGE, "SPLIT — dividir vetor"),
-            (GREEN,  "MERGE — mesclar resultados"),
-            (PURPLE, "RET   — retorno da função"),
+        # ── legenda ────────────────────────────────────────
+        tk.Label(coluna_dir, text="LEGENDA", bg=FUNDO, fg=CINZA_LEVE,
+                 font=(FONTE_MONO, 8, "bold"), anchor="w").pack(fill="x",
+                                                                 pady=(0, 4))
+        legenda = [
+            (COR_CALL,   "CHAMADA",  "nova chamada a merge_sort"),
+            (COR_COPIAR, "COPIAR",   "função copiar(vetor, ini, fim)"),
+            (COR_BASE,   "BASE",     "caso base: fim ≤ 1"),
+            (COR_MERGE,  "MERGE",    "função merge(esq, dir)"),
+            (COR_RET,    "RETORNO",  "retorno com vetor ordenado"),
         ]
-        for color, label in legend_items:
-            row = tk.Frame(leg, bg=BG2)
-            row.pack(anchor="w", pady=1)
-            tk.Label(row, text="■", bg=BG2, fg=color,
-                     font=("Courier New", 9)).pack(side="left")
-            tk.Label(row, text=label, bg=BG2, fg=TEXT_DIM,
-                     font=("Courier New", 8)).pack(side="left", padx=4)
+        for cor, tipo, desc in legenda:
+            row = tk.Frame(coluna_dir, bg=FUNDO)
+            row.pack(fill="x", pady=1)
+            tk.Label(row, text="■", bg=FUNDO, fg=cor,
+                     font=(FONTE_MONO, 9)).pack(side="left")
+            tk.Label(row, text=f" {tipo:<8}", bg=FUNDO, fg=cor,
+                     font=(FONTE_MONO, 8, "bold")).pack(side="left")
+            tk.Label(row, text=desc, bg=FUNDO, fg=CINZA_LEVE,
+                     font=(FONTE_MONO, 7)).pack(side="left")
 
-    # ─── SCROLL HELPERS ──────────────────────
-    def _on_stack_configure(self, event):
-        self.stack_canvas.configure(scrollregion=self.stack_canvas.bbox("all"))
+        # ── separador ──────────────────────────────────────
+        tk.Frame(coluna_dir, bg=BORDA, height=1).pack(fill="x", pady=8)
 
-    def _on_canvas_resize(self, event):
-        self.stack_canvas.itemconfig(self._stack_window, width=event.width)
+        # ── barra de progresso ─────────────────────────────
+        self._var_prog = tk.DoubleVar()
 
-    # ─── DATA LOAD ───────────────────────────
-    def _load_data(self, data):
-        self.playing = False
-        if self._after_id:
-            self.after_cancel(self._after_id)
-            self._after_id = None
+        self._lbl_passo = tk.Label(coluna_dir, text="passo 0 / 0",
+                                    bg=FUNDO, fg=CINZA_LEVE,
+                                    font=(FONTE_MONO, 8), anchor="e")
+        self._lbl_passo.pack(fill="x")
 
-        # clear stack area
-        for w in self.stack_inner.winfo_children():
+        # ── botões de navegação ────────────────────────────
+        tk.Frame(coluna_dir, bg=BORDA, height=1).pack(fill="x", pady=8)
+
+        frame_btns = tk.Frame(coluna_dir, bg=FUNDO)
+        frame_btns.pack(fill="x")
+
+        estilo_btn = dict(relief="flat", font=(FONTE_MONO, 10),
+                          cursor="hand2", pady=6, padx=14,
+                          highlightthickness=1)
+
+        self._btn_ant = tk.Button(frame_btns, text="◀  Anterior",
+                                   bg=PAPEL, fg=CINZA_MEDIO,
+                                   highlightbackground=BORDA,
+                                   command=self._passo_anterior, **estilo_btn)
+        self._btn_ant.pack(side="left", padx=(0, 6), fill="x", expand=True)
+
+        self._btn_prox = tk.Button(frame_btns, text="Próximo  ▶",
+                                    bg=COR_CALL, fg=PAPEL,
+                                    highlightbackground=COR_CALL,
+                                    activebackground="#1346B8",
+                                    activeforeground=PAPEL,
+                                    command=self._passo_proximo, **estilo_btn)
+        self._btn_prox.pack(side="left", fill="x", expand=True)
+
+        # teclas de atalho
+        self.bind("<Right>",  lambda e: self._passo_proximo())
+        self.bind("<Left>",   lambda e: self._passo_anterior())
+        self.bind("<space>",  lambda e: self._passo_proximo())
+
+    # ══ SCROLL ════════════════════════════════════════════
+    def _ao_redimensionar_pilha(self, event):
+        self._canvas_pilha.configure(
+            scrollregion=self._canvas_pilha.bbox("all"))
+
+    def _ao_redimensionar_canvas(self, event):
+        self._canvas_pilha.itemconfig(self._win_pilha, width=event.width)
+
+    def _rolar_para_baixo(self):
+        self._frame_pilha_interno.update_idletasks()
+        self._canvas_pilha.configure(
+            scrollregion=self._canvas_pilha.bbox("all"))
+        self._canvas_pilha.yview_moveto(1.0)
+
+    # ══ CARGA DE DADOS ════════════════════════════════════
+    def _carregar(self, dados: list[int]):
+        for w in self._frame_pilha_interno.winfo_children():
             w.destroy()
-        self.frame_widgets.clear()
-        self.active_stack.clear()
-        self.call_meta.clear()
+        self._frames_pilha.clear()
+        self._pilha_ativa.clear()
+        self._log.configure(state="normal")
+        self._log.delete("1.0", "end")
+        self._log.configure(state="disabled")
 
-        # clear log
-        self.log_text.configure(state="normal")
-        self.log_text.delete("1.0", "end")
-        self.log_text.configure(state="disabled")
+        tracer = Tracer(dados)
+        self._eventos = tracer.eventos
+        self._passo_atual = 0
+        self._atualizar_progresso()
+        self._atualizar_botoes()
 
-        tracer = MergeSortTracer(data)
-        self.events    = tracer.events
-        self.event_idx = 0
-        self._update_progress()
-        self._update_btn_play()
-
-    def _reload(self):
+    def _recarregar(self):
         try:
-            raw  = self.input_var.get()
-            data = [int(x.strip()) for x in raw.split(",") if x.strip()]
-            if not data:
+            raw   = self._var_entrada.get()
+            dados = [int(x.strip()) for x in raw.split(",") if x.strip()]
+            if not dados:
                 raise ValueError
         except ValueError:
-            self._log_line("⚠ entrada inválida — use números separados por vírgula", "dim")
+            self._log_append("⚠ entrada inválida. Use números separados por vírgula.", "dim")
             return
-        self._load_data(data)
+        self._carregar(dados)
 
-    # ─── PLAYBACK CONTROLS ───────────────────
-    def _toggle_play(self):
-        self.playing = not self.playing
-        self._update_btn_play()
-        if self.playing:
-            self._schedule_next()
-
-    def _update_btn_play(self):
-        if self.playing:
-            self.btn_play.configure(text="⏸", bg=ORANGE_DIM, fg=ORANGE)
-        else:
-            self.btn_play.configure(text="▶", bg=GREEN_DIM, fg=GREEN)
-
-    def _schedule_next(self):
-        if not self.playing:
+    # ══ NAVEGAÇÃO ═════════════════════════════════════════
+    def _passo_proximo(self):
+        if self._passo_atual >= len(self._eventos):
             return
-        if self.event_idx >= len(self.events):
-            self.playing = False
-            self._update_btn_play()
+        self._aplicar_evento(self._eventos[self._passo_atual])
+        self._passo_atual += 1
+        self._atualizar_progresso()
+        self._atualizar_botoes()
+
+    def _passo_anterior(self):
+        if self._passo_atual <= 0:
             return
-        self._apply_event(self.events[self.event_idx])
-        self.event_idx += 1
-        self._update_progress()
-        self._after_id = self.after(self.speed_ms, self._schedule_next)
+        alvo = self._passo_atual - 1
+        self._reconstruir_ate(alvo)
 
-    def _step_forward(self):
-        if self.event_idx < len(self.events):
-            self._apply_event(self.events[self.event_idx])
-            self.event_idx += 1
-            self._update_progress()
-
-    def _step_back(self):
-        """Rebuild from scratch up to event_idx-1."""
-        if self.event_idx <= 0:
-            return
-        target = self.event_idx - 1
-        self._rebuild_to(target)
-
-    def _step_back_many(self):
-        target = max(0, self.event_idx - 5)
-        self._rebuild_to(target)
-
-    def _step_forward_many(self):
-        end = min(len(self.events), self.event_idx + 5)
-        while self.event_idx < end:
-            self._apply_event(self.events[self.event_idx])
-            self.event_idx += 1
-        self._update_progress()
-
-    def _rebuild_to(self, target):
-        """Replay all events from 0..target (exclusive) to restore state."""
-        for w in self.stack_inner.winfo_children():
+    def _reconstruir_ate(self, alvo: int):
+        """Reconstrói a pilha do zero até o passo `alvo`."""
+        for w in self._frame_pilha_interno.winfo_children():
             w.destroy()
-        self.frame_widgets.clear()
-        self.active_stack.clear()
-        self.call_meta.clear()
-        self.log_text.configure(state="normal")
-        self.log_text.delete("1.0", "end")
-        self.log_text.configure(state="disabled")
-        self.event_idx = 0
-        for i in range(target):
-            self._apply_event(self.events[i], silent=(i < target-1))
-            self.event_idx += 1
-        self._update_progress()
+        self._frames_pilha.clear()
+        self._pilha_ativa.clear()
+        self._log.configure(state="normal")
+        self._log.delete("1.0", "end")
+        self._log.configure(state="disabled")
+        self._passo_atual = 0
+        for i in range(alvo):
+            self._aplicar_evento(self._eventos[i])
+            self._passo_atual += 1
+        self._atualizar_progresso()
+        self._atualizar_botoes()
 
-    def _update_progress(self):
-        total = len(self.events)
-        pct   = (self.event_idx / total * 100) if total else 0
-        self.progress_var.set(pct)
-        self.step_label.configure(text=f"evento {self.event_idx} / {total}")
+    def _atualizar_progresso(self):
+        total = len(self._eventos)
+        pct   = (self._passo_atual / total * 100) if total else 0
+        self._var_prog.set(pct)
+        self._lbl_passo.configure(
+            text=f"passo {self._passo_atual} / {total}")
 
-    # ─── EVENT RENDERER ──────────────────────
-    def _apply_event(self, ev, silent=False):
-        kind = ev["kind"]
+    def _atualizar_botoes(self):
+        self._btn_ant.configure(
+            state="normal" if self._passo_atual > 0 else "disabled",
+            fg=CINZA_MEDIO if self._passo_atual > 0 else CINZA_LEVE)
+        self._btn_prox.configure(
+            state="normal" if self._passo_atual < len(self._eventos) else "disabled")
 
-        if kind == "CALL":
-            self._evt_call(ev, silent)
-        elif kind == "BASE_CASE":
-            self._evt_base(ev, silent)
-        elif kind == "SPLIT":
-            self._evt_split(ev, silent)
-        elif kind == "MERGE":
-            self._evt_merge(ev, silent)
-        elif kind == "RETURN":
-            self._evt_return(ev, silent)
+        # profundidade atual
+        if self._pilha_ativa:
+            fw = self._frames_pilha.get(self._pilha_ativa[-1])
+            p  = fw.profundidade if fw else 0
+            self._lbl_profundidade.configure(
+                text=f"profundidade atual: {p}")
+        else:
+            self._lbl_profundidade.configure(text="")
 
-    # ── helpers ──────────────────────────────
-    def _log_line(self, text, tag="dim"):
-        self.log_text.configure(state="normal")
-        self.log_text.insert("end", text + "\n", tag)
-        self.log_text.see("end")
-        self.log_text.configure(state="disabled")
+    # ══ APLICAÇÃO DE EVENTOS ══════════════════════════════
+    def _aplicar_evento(self, ev: dict):
+        tipo = ev["tipo"]
 
-    def _array_str(self, lst):
-        return "[" + ", ".join(str(x) for x in lst) + "]"
+        if tipo == "CHAMADA":
+            self._evt_chamada(ev)
+        elif tipo == "CASO_BASE":
+            self._evt_caso_base(ev)
+        elif tipo == "COPIAR":
+            self._evt_copiar(ev)
+        elif tipo == "MERGE":
+            self._evt_merge(ev)
+        elif tipo == "RETORNO":
+            self._evt_retorno(ev)
 
-    def _depth_indent(self, depth):
-        return depth * 26   # px indent per depth level
+        # sempre registrar no log
+        tipo_label, desc, cor = _descricao_evento(ev)
+        self._log_append(f"{tipo_label:<8}  {desc}", tipo_label)
 
-    def _make_frame(self, call_id, depth, side, title_text, color, vetor):
-        indent = self._depth_indent(depth)
+    # ── CHAMADA ───────────────────────────────────────────
+    def _evt_chamada(self, ev: dict):
+        cid  = ev["call_id"]
+        prof = ev["profundidade"]
+        lado = ev["lado"]
 
-        outer = tk.Frame(self.stack_inner, bg=BG, pady=2)
-        outer.pack(fill="x", padx=(indent, 6), pady=2)
+        # indent por profundidade
+        indent = prof * FrameChamada.LARGURA_INDENT
 
-        inner = tk.Frame(outer, bg=BG2,
-                         highlightthickness=1, highlightbackground=color)
-        inner.pack(fill="x")
+        wrapper = tk.Frame(self._frame_pilha_interno, bg=FUNDO)
+        wrapper.pack(fill="x", padx=(indent, 6), pady=(0, 4))
 
-        # title row
-        title_row = tk.Frame(inner, bg=color)
-        title_row.pack(fill="x")
+        fc = FrameChamada(wrapper, call_id=cid, profundidade=prof,
+                          lado=lado, vetor=ev["vetor"], fim=ev["fim"])
+        fc.pack(fill="x")
+        fc.set_status("chamada iniciada", COR_CALL)
+        fc.set_borda(COR_CALL)
 
-        side_badge = {"esq": "← L", "dir": "R →", "root": "ROOT"}
-        badge_txt  = side_badge.get(side, side)
+        self._frames_pilha[cid] = fc
+        self._pilha_ativa.append(cid)
+        self._rolar_para_baixo()
 
-        tk.Label(title_row, text=f" {badge_txt} ", bg=color, fg=BG,
-                 font=("Courier New", 7, "bold")).pack(side="left")
-        tk.Label(title_row, text=title_text, bg=color, fg=BG,
-                 font=("Courier New", 8, "bold")).pack(side="left", padx=4)
-        tk.Label(title_row, text=f"depth={depth}", bg=color, fg=BG2,
-                 font=("Courier New", 7)).pack(side="right", padx=4)
+    # ── CASO BASE ─────────────────────────────────────────
+    def _evt_caso_base(self, ev: dict):
+        fc = self._frames_pilha.get(ev["call_id"])
+        if not fc:
+            return
+        fc.set_status("caso base: fim ≤ 1 → retorna imediatamente", COR_BASE)
+        fc.set_borda(COR_BASE)
 
-        # body
-        body = tk.Frame(inner, bg=BG2, padx=6, pady=4)
-        body.pack(fill="x")
+    # ── COPIAR ────────────────────────────────────────────
+    def _evt_copiar(self, ev: dict):
+        fc = self._frames_pilha.get(ev["call_id"])
+        if not fc:
+            return
+        fc.mostrar_meio(ev["meio"])
+        if ev["variavel"] == "v_esq":
+            fc.mostrar_v_esq(ev["resultado"], destaque=True)
+            fc.set_status(
+                f"copiar(vetor, 0, {ev['fim_copia']}) → v_esq = {_fmt_vetor(ev['resultado'])}",
+                COR_COPIAR)
+        else:
+            fc.mostrar_v_dir(ev["resultado"], destaque=True)
+            fc.set_status(
+                f"copiar(vetor, {ev['inicio']}, {ev['fim_copia']}) → v_dir = {_fmt_vetor(ev['resultado'])}",
+                COR_COPIAR)
+        fc.set_borda(COR_COPIAR)
 
-        # array visualization (boxes)
-        arr_frame = tk.Frame(body, bg=BG2)
-        arr_frame.pack(anchor="w", pady=(0,2))
+    # ── MERGE ─────────────────────────────────────────────
+    def _evt_merge(self, ev: dict):
+        fc = self._frames_pilha.get(ev["call_id"])
+        if not fc:
+            return
+        fc.set_status(
+            f"merge({_fmt_vetor(ev['esq'])}, {_fmt_vetor(ev['dir'])}) → {_fmt_vetor(ev['resultado'])}",
+            COR_MERGE)
+        fc.set_borda(COR_MERGE)
+        fc.mostrar_resultado(ev["resultado"])
 
-        box_size = max(22, min(36, 200 // max(len(vetor), 1)))
-        cell_frames = []
-        for val in vetor:
-            cell = tk.Frame(arr_frame, bg=BG3,
-                            width=box_size, height=box_size,
-                            highlightthickness=1, highlightbackground=BORDER)
-            cell.pack_propagate(False)
-            cell.pack(side="left", padx=1)
-            lbl = tk.Label(cell, text=str(val), bg=BG3, fg=TEXT,
-                           font=("Courier New", 8, "bold"))
-            lbl.place(relx=0.5, rely=0.5, anchor="center")
-            cell_frames.append((cell, lbl))
+    # ── RETORNO ───────────────────────────────────────────
+    def _evt_retorno(self, ev: dict):
+        cid = ev["call_id"]
+        fc  = self._frames_pilha.get(cid)
+        if fc:
+            fc.set_status(
+                f"↩ retorna {_fmt_vetor(ev['resultado'])}",
+                COR_RET)
+            fc.set_borda(COR_RET)
+            # após breve delay visual, esmaece
+            self.after(80, lambda: fc.dimmer())
 
-        # status label
-        status_lbl = tk.Label(body, text="executando…", bg=BG2, fg=TEXT_MUTED,
-                               font=("Courier New", 7), anchor="w")
-        status_lbl.pack(fill="x")
+        if cid in self._pilha_ativa:
+            self._pilha_ativa.remove(cid)
 
-        self.frame_widgets[call_id] = {
-            "outer":       outer,
-            "inner":       inner,
-            "color":       color,
-            "cells":       cell_frames,
-            "status_lbl":  status_lbl,
-            "body":        body,
-            "vetor":       vetor,
-            "depth":       depth,
-        }
-        self._scroll_to_bottom()
-        return self.frame_widgets[call_id]
-
-    def _scroll_to_bottom(self):
-        self.stack_inner.update_idletasks()
-        self.stack_canvas.configure(scrollregion=self.stack_canvas.bbox("all"))
-        self.stack_canvas.yview_moveto(1.0)
-
-    def _update_frame_status(self, call_id, text, fg=TEXT_DIM):
-        fw = self.frame_widgets.get(call_id)
-        if fw:
-            fw["status_lbl"].configure(text=text, fg=fg)
-
-    def _highlight_frame(self, call_id, color):
-        fw = self.frame_widgets.get(call_id)
-        if fw:
-            fw["inner"].configure(highlightbackground=color)
-
-    def _dim_frame(self, call_id):
-        fw = self.frame_widgets.get(call_id)
-        if fw:
-            fw["inner"].configure(highlightbackground=TEXT_MUTED)
-            fw["status_lbl"].configure(fg=TEXT_MUTED)
-
-    # ── event handlers ───────────────────────
-    def _evt_call(self, ev, silent):
-        cid   = ev["call_id"]
-        depth = ev["depth"]
-        side  = ev["side"]
-        vetor = ev["vetor"]
-        fim   = ev["fim"]
-
-        self.call_meta[cid] = ev
-        self.active_stack.append(cid)
-
-        fw = self._make_frame(cid, depth, side,
-                              f"merge_sort({self._array_str(vetor)}, fim={fim})",
-                              BLUE, vetor)
-
-        if not silent:
-            self._highlight_frame(cid, BLUE)
-            self._log_line(
-                f"{'  '*depth}▶ CALL  depth={depth} {side}  {self._array_str(vetor)}",
-                "call")
-
-    def _evt_base(self, ev, silent):
-        cid   = ev["call_id"]
-        depth = ev["depth"]
-        vetor = ev["vetor"]
-
-        self._update_frame_status(cid, "caso base ✓  retorna imediatamente", YELLOW)
-        self._highlight_frame(cid, YELLOW)
-
-        # colour cell yellow
-        fw = self.frame_widgets.get(cid)
-        if fw:
-            for cell, lbl in fw["cells"]:
-                cell.configure(bg=GREEN_DIM, highlightbackground=GREEN)
-                lbl.configure(bg=GREEN_DIM, fg=GREEN)
-
-        if not silent:
-            self._log_line(
-                f"{'  '*depth}◆ BASE  {self._array_str(vetor)}  ← fim≤1",
-                "base")
-
-    def _evt_split(self, ev, silent):
-        cid   = ev["call_id"]
-        depth = ev["depth"]
-        esq   = ev["esq"]
-        dir_  = ev["dir"]
-        meio  = ev["meio"]
-
-        self._update_frame_status(cid,
-            f"split  [{','.join(map(str,esq))}]  |  [{','.join(map(str,dir_))}]",
-            ORANGE)
-        self._highlight_frame(cid, ORANGE)
-
-        # colour cells: left=orange, right=blue
-        fw = self.frame_widgets.get(cid)
-        if fw:
-            cells = fw["cells"]
-            for i, (cell, lbl) in enumerate(cells):
-                if i < meio:
-                    cell.configure(bg=ORANGE_DIM, highlightbackground=ORANGE)
-                    lbl.configure(bg=ORANGE_DIM, fg=ORANGE)
-                else:
-                    cell.configure(bg=BLUE_DIM, highlightbackground=BLUE)
-                    lbl.configure(bg=BLUE_DIM, fg=BLUE)
-
-        if not silent:
-            self._log_line(
-                f"{'  '*depth}✂ SPLIT depth={depth}  esq{self._array_str(esq)}  dir{self._array_str(dir_)}",
-                "split")
-
-    def _evt_merge(self, ev, silent):
-        cid    = ev["call_id"]
-        depth  = ev["depth"]
-        esq    = ev["esq"]
-        dir_   = ev["dir"]
-        result = ev["result"]
-
-        self._update_frame_status(cid,
-            f"⊕ merge  {self._array_str(esq)} + {self._array_str(dir_)} → {self._array_str(result)}",
-            GREEN)
-        self._highlight_frame(cid, GREEN)
-
-        # recolour cells with merged result
-        fw = self.frame_widgets.get(cid)
-        if fw:
-            cells = fw["cells"]
-            # replace cell values with result
-            for i, val in enumerate(result):
-                if i < len(cells):
-                    cell, lbl = cells[i]
-                    lbl.configure(text=str(val), fg=GREEN, bg=GREEN_DIM)
-                    cell.configure(bg=GREEN_DIM, highlightbackground=GREEN)
-
-        if not silent:
-            self._log_line(
-                f"{'  '*depth}⊕ MERGE depth={depth}  {self._array_str(esq)} ⊕ {self._array_str(dir_)} → {self._array_str(result)}",
-                "merge")
-
-    def _evt_return(self, ev, silent):
-        cid    = ev["call_id"]
-        pid    = ev["parent_id"]
-        depth  = ev["depth"]
-        result = ev["result"]
-
-        self._dim_frame(cid)
-        # pop from active stack
-        if cid in self.active_stack:
-            self.active_stack.remove(cid)
-
-        if not silent:
-            self._log_line(
-                f"{'  '*depth}↩ RET   depth={depth}  → {self._array_str(result)}",
-                "ret")
+    # ══ LOG ═══════════════════════════════════════════════
+    def _log_append(self, texto: str, tag: str = "dim"):
+        self._log.configure(state="normal")
+        self._log.insert("end", texto + "\n", tag)
+        self._log.see("end")
+        self._log.configure(state="disabled")
 
 
-# ─────────────────────────────────────────────
-#  MAIN
-# ─────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+#  ENTRADA
+# ══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    app = MergeSortVisualizer()
+    app = App()
     app.mainloop()
