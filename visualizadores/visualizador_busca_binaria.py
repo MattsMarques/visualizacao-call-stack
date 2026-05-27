@@ -17,7 +17,7 @@ class AppBuscaBinaria:
         self.passo_atual = 0
         
         # Gerar os passos da recursão antes de desenhar
-        self.generar_passos_recursao(0, len(self.vetor) - 1, nivel=0)
+        self.generar_passos_recursao(0, len(self.vetor) - 1, nivel=1)
         
         # --- Interface Gráfica (Layout) ---
         # Painel Superior: Dados do Vetor
