@@ -1,14 +1,12 @@
 import tkinter as tk
 
-# ═══════════════════════════════════════════════════════════
-#  PALETA
-# ═══════════════════════════════════════════════════════════
-BG           = "#0F0F1A"
-PANEL_BG     = "#1A1A2E"
+BG           = "#FFFFFF"
+BLACK = "#000000"
+PANEL_BG     = "#F1F1F1"
 HEADER_FG    = "#E2E8F0"
 MUTED_FG     = "#64748B"
 BORDER       = "#2D2D44"
-ROW_NORMAL   = "#16213E"
+ROW_NORMAL   = "#F1F1F1"
 ROW_ACTIVE   = "#1E3A5F"
 BASE_ROW     = "#0D3321"
 BADGE_BG     = "#2D2D60"
@@ -17,12 +15,15 @@ BASE_BADGE   = "#14532D"
 BASE_BADGE_FG= "#86EFAC"
 QMARK_FG     = "#334155"
 FILLED_FG    = "#34D399"
-ACCENT       = "#6366F1"
-ACCENT_HOV   = "#4F46E5"
-BTN_SEC      = "#1E293B"
+ACCENT       = "#4ADE80"
+ACCENT_HOV   = "#44A869"
+BTN_SEC      = "#FFFFFF"
 ACTIVE_TEXT  = "#F1F5F9"
 LEGEND_BG    = "#0D1117"
 LEGEND_FG    = "#CBD5E1"
+
+FONTE_HEAD = "Cabinet Grotesk"
+FONTE_TXT = "Inter"
 
 # ═══════════════════════════════════════════════════════════
 #  CONTEÚDO
@@ -82,13 +83,13 @@ class App:
 
         frm_top = tk.Frame(self.root, bg=BG)
         frm_top.pack(fill="x", padx=40, pady=(30, 0))
-        tk.Label(frm_top, text="ETAPA  1", font=("Courier", 11, "bold"),
+        tk.Label(frm_top, text="ETAPA  1", font=(FONTE_TXT, 11, "bold"),
                  bg=BG, fg=ACCENT).pack(anchor="w")
         tk.Label(frm_top, text="Empilhando chamadas",
-                 font=("Georgia", 22, "bold"), bg=BG, fg=HEADER_FG).pack(anchor="w")
+                 font=(FONTE_HEAD, 22, "bold"), bg=BG, fg=BLACK).pack(anchor="w")
         tk.Label(frm_top,
                  text="Quando a função chama outra, ela fica pausada e vai para a pilha.",
-                 font=("Helvetica", 12), bg=BG, fg=MUTED_FG).pack(anchor="w", pady=(4, 0))
+                 font=(FONTE_TXT, 12), bg=BG, fg=MUTED_FG).pack(anchor="w", pady=(4, 0))
 
         tk.Frame(self.root, bg=BORDER, height=1).pack(fill="x", padx=40, pady=16)
 
@@ -100,8 +101,8 @@ class App:
             cell = tk.Frame(self.frm_table, bg=PANEL_BG, width=w, height=36)
             cell.grid(row=0, column=col, padx=(0, 2), pady=(0, 2))
             cell.pack_propagate(False)
-            tk.Label(cell, text=h, font=("Helvetica", 11, "bold"),
-                     bg=PANEL_BG, fg=MUTED_FG, anchor="w", padx=12).pack(fill="both", expand=True)
+            tk.Label(cell, text=h, font=(FONTE_TXT, 11, "bold"),
+                     bg=PANEL_BG, fg=BLACK, anchor="w", padx=12).pack(fill="both", expand=True)
 
         self.row_frames = []
         self.val_labels = []
@@ -116,27 +117,27 @@ class App:
                 c.pack_propagate(False)
                 cells.append(c)
 
-            tk.Label(cells[0], text=ordem, font=("Helvetica", 14),
+            tk.Label(cells[0], text=ordem, font=(FONTE_TXT, 14),
                      bg=BG, fg=BG, anchor="w", padx=16).pack(fill="both", expand=True)
 
             b_bg = BASE_BADGE    if is_base else BADGE_BG
             b_fg = BASE_BADGE_FG if is_base else BADGE_FG
             outer = tk.Frame(cells[1], bg=BG)
             outer.pack(side="left", padx=14, pady=10)
-            tk.Label(outer, text=f"  {chamada}  ", font=("Courier", 13, "bold"),
+            tk.Label(outer, text=f"  {chamada}  ", font=(FONTE_TXT, 13, "bold"),
                      bg=BG, fg=BG, padx=6, pady=3).pack()
 
             if is_base:
-                tk.Label(cells[2], text=guardado, font=("Courier", 13, "bold"),
+                tk.Label(cells[2], text=guardado, font=(FONTE_TXT, 13, "bold"),
                          bg=BG, fg=BG, anchor="w", padx=14).pack(fill="both", expand=True)
                 self.val_labels.append(None)
             else:
                 prefix = guardado[:-1]
                 inner = tk.Frame(cells[2], bg=BG)
                 inner.pack(fill="both", expand=True, padx=14)
-                tk.Label(inner, text=prefix, font=("Courier", 13),
+                tk.Label(inner, text=prefix, font=(FONTE_TXT, 13),
                          bg=BG, fg=BG).pack(side="left", pady=14)
-                lv = tk.Label(inner, text="?", font=("Courier", 13, "bold"),
+                lv = tk.Label(inner, text="?", font=(FONTE_TXT, 13, "bold"),
                               bg=BG, fg=BG)
                 lv.pack(side="left", pady=14)
                 self.val_labels.append(lv)
@@ -148,7 +149,7 @@ class App:
         self.lbl_legend = tk.Label(
             self.root,
             text="Pressione  ▶ Avançar  para revelar a primeira chamada.",
-            font=("Helvetica", 12, "italic"), bg=LEGEND_BG, fg=LEGEND_FG,
+            font=(FONTE_TXT, 12, "italic"), bg=LEGEND_BG, fg=LEGEND_FG,
             wraplength=760, justify="left", anchor="w", padx=20, pady=12,
         )
         self.lbl_legend.pack(fill="x", padx=40, pady=(8, 0))
@@ -157,7 +158,7 @@ class App:
         self.lbl_step = tk.Label(
             self.root,
             text=f"Passo  0 / {len(ETAPA1_LINHAS)}",
-            font=("Courier", 11), bg=BG, fg=MUTED_FG,
+            font=(FONTE_TXT, 11), bg=BG, fg=MUTED_FG,
         )
         self.lbl_step.pack(pady=(6, 0))
 
@@ -167,7 +168,7 @@ class App:
 
         self.btn_main = tk.Button(
             frm_btn, text="▶  Avançar",
-            font=("Helvetica", 13, "bold"),
+            font=(FONTE_TXT, 13, "bold"),
             bg=ACCENT, fg="white",
             activebackground=ACCENT_HOV, activeforeground="white",
             relief="flat", padx=24, pady=8, cursor="hand2",
@@ -177,7 +178,7 @@ class App:
 
         tk.Button(
             frm_btn, text="↺  Reiniciar",
-            font=("Helvetica", 12), bg=BTN_SEC, fg=HEADER_FG,
+            font=(FONTE_TXT, 12), bg=BTN_SEC, fg=HEADER_FG,
             activebackground="#334155", relief="flat",
             padx=18, pady=8, cursor="hand2",
             command=self._show_etapa1,
@@ -279,13 +280,13 @@ class App:
 
         frm_top = tk.Frame(self.root, bg=BG)
         frm_top.pack(fill="x", padx=40, pady=(30, 0))
-        tk.Label(frm_top, text="ETAPA  2", font=("Courier", 11, "bold"),
+        tk.Label(frm_top, text="ETAPA  2", font=(FONTE_TXT, 11, "bold"),
                  bg=BG, fg="#34D399").pack(anchor="w")
         tk.Label(frm_top, text="Preenchendo os retornos",
-                 font=("Georgia", 22, "bold"), bg=BG, fg=HEADER_FG).pack(anchor="w")
+                 font=(FONTE_HEAD, 22, "bold"), bg=BG, fg=HEADER_FG).pack(anchor="w")
         tk.Label(frm_top,
                  text="fatorial(0) retorna 1 — o valor sobe resolvendo cada chamada pausada.",
-                 font=("Helvetica", 12), bg=BG, fg=MUTED_FG).pack(anchor="w", pady=(4, 0))
+                 font=(FONTE_TXT, 12), bg=BG, fg=MUTED_FG).pack(anchor="w", pady=(4, 0))
 
         tk.Frame(self.root, bg=BORDER, height=1).pack(fill="x", padx=40, pady=16)
 
@@ -296,7 +297,7 @@ class App:
             cell = tk.Frame(self.frm_table, bg=PANEL_BG, width=w, height=36)
             cell.grid(row=0, column=col, padx=(0, 2), pady=(0, 2))
             cell.pack_propagate(False)
-            tk.Label(cell, text=h, font=("Helvetica", 11, "bold"),
+            tk.Label(cell, text=h, font=(FONTE_TXT, 11, "bold"),
                      bg=PANEL_BG, fg=MUTED_FG, anchor="w", padx=12).pack(fill="both", expand=True)
 
         self.row_frames2 = []
@@ -312,27 +313,27 @@ class App:
                 c.pack_propagate(False)
                 cells.append(c)
 
-            tk.Label(cells[0], text=ordem, font=("Helvetica", 14),
+            tk.Label(cells[0], text=ordem, font=(FONTE_TXT, 14),
                      bg=row_bg, fg=MUTED_FG, anchor="w", padx=16).pack(fill="both", expand=True)
 
             b_bg = BASE_BADGE    if is_base else BADGE_BG
             b_fg = BASE_BADGE_FG if is_base else BADGE_FG
             outer = tk.Frame(cells[1], bg=row_bg)
             outer.pack(side="left", padx=14, pady=10)
-            tk.Label(outer, text=f"  {chamada}  ", font=("Courier", 13, "bold"),
+            tk.Label(outer, text=f"  {chamada}  ", font=(FONTE_TXT, 13, "bold"),
                      bg=b_bg, fg=b_fg, padx=6, pady=3).pack()
 
             if is_base:
-                tk.Label(cells[2], text=guardado, font=("Courier", 13, "bold"),
+                tk.Label(cells[2], text=guardado, font=(FONTE_TXT, 13, "bold"),
                          bg=row_bg, fg=BASE_BADGE_FG, anchor="w", padx=14).pack(fill="both", expand=True)
                 self.val_labels2.append(None)
             else:
                 prefix = guardado[:-1]
                 inner = tk.Frame(cells[2], bg=row_bg)
                 inner.pack(fill="both", expand=True, padx=14)
-                tk.Label(inner, text=prefix, font=("Courier", 13),
+                tk.Label(inner, text=prefix, font=(FONTE_TXT, 13),
                          bg=row_bg, fg=ACTIVE_TEXT).pack(side="left", pady=14)
-                lv = tk.Label(inner, text="?", font=("Courier", 13, "bold"),
+                lv = tk.Label(inner, text="?", font=(FONTE_TXT, 13, "bold"),
                               bg=row_bg, fg=QMARK_FG)
                 lv.pack(side="left", pady=14)
                 self.val_labels2.append(lv)
@@ -344,7 +345,7 @@ class App:
         self.lbl_legend = tk.Label(
             self.root,
             text="Pressione  ▶ Avançar  para desempilhar o primeiro retorno.",
-            font=("Helvetica", 12, "italic"), bg=LEGEND_BG, fg=LEGEND_FG,
+            font=(FONTE_TXT, 12, "italic"), bg=LEGEND_BG, fg=LEGEND_FG,
             wraplength=760, justify="left", anchor="w", padx=20, pady=12,
         )
         self.lbl_legend.pack(fill="x", padx=40, pady=(8, 0))
@@ -352,7 +353,7 @@ class App:
         self.lbl_step = tk.Label(
             self.root,
             text=f"Passo  0 / {len(ETAPA2_PASSOS)}",
-            font=("Courier", 11), bg=BG, fg=MUTED_FG,
+            font=(FONTE_TXT, 11), bg=BG, fg=MUTED_FG,
         )
         self.lbl_step.pack(pady=(6, 0))
 
@@ -361,7 +362,7 @@ class App:
 
         self.btn_main = tk.Button(
             frm_btn, text="▶  Avançar",
-            font=("Helvetica", 13, "bold"),
+            font=(FONTE_TXT, 13, "bold"),
             bg=ACCENT, fg="white",
             activebackground=ACCENT_HOV, activeforeground="white",
             relief="flat", padx=24, pady=8, cursor="hand2",
@@ -371,7 +372,7 @@ class App:
 
         tk.Button(
             frm_btn, text="↺  Recomeçar do início",
-            font=("Helvetica", 12), bg=BTN_SEC, fg=HEADER_FG,
+            font=(FONTE_TXT, 12), bg=BTN_SEC, fg=HEADER_FG,
             activebackground="#334155", relief="flat",
             padx=18, pady=8, cursor="hand2",
             command=self._show_etapa1,

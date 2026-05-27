@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 import array
 
+FONTE_HEAD = "Cabinet Grotesk"
+FONTE_TXT = "Inter"
+
 class AppBuscaBinaria:
     def __init__(self, root):
         self.root = root
@@ -24,10 +27,10 @@ class AppBuscaBinaria:
         self.frame_topo = ttk.LabelFrame(root, text=" Vetor e Alvo ", padding=10)
         self.frame_topo.pack(fill="x", padx=15, pady=10)
         
-        lbl_vetor = ttk.Label(self.frame_topo, text=f"Vetor: {list(self.vetor)}", font=("Courier", 12, "bold"))
+        lbl_vetor = ttk.Label(self.frame_topo, text=f"Vetor: {list(self.vetor)}", font=(FONTE_TXT, 12, "bold"))
         lbl_vetor.pack(side="left", padx=10)
         
-        lbl_alvo = ttk.Label(self.frame_topo, text=f"Buscando número: {self.numero_alvo}", font=("Arial", 11))
+        lbl_alvo = ttk.Label(self.frame_topo, text=f"Buscando número: {self.numero_alvo}", font=(FONTE_TXT, 11))
         lbl_alvo.pack(side="right", padx=10)
         
         # Painel Central: Dividido em Pilha (Visual) e Logs (Texto)
@@ -45,7 +48,7 @@ class AppBuscaBinaria:
         self.frame_texto = ttk.LabelFrame(self.frame_central, text=" O que está acontecendo? ", padding=10)
         self.frame_texto.pack(side="right", fill="both", expand=True, padx=(5, 0))
         
-        self.txt_log = tk.Text(self.frame_texto, wrap="word", font=("Arial", 11), bg="#fafafa", state="disabled")
+        self.txt_log = tk.Text(self.frame_texto, wrap="word", font=(FONTE_TXT, 11), bg="#fafafa", state="disabled")
         self.txt_log.pack(fill="both", expand=True)
         
         # Painel Inferior: Controles
@@ -58,7 +61,7 @@ class AppBuscaBinaria:
         self.btn_proximo = ttk.Button(self.frame_botoes, text="Próximo Passo ↪", command=self.proximo_passo)
         self.btn_proximo.pack(side="right", padx=20)
         
-        self.lbl_status = ttk.Label(self.frame_botoes, text=f"Passo 0 de {len(self.passos)-1}", font=("Arial", 10))
+        self.lbl_status = ttk.Label(self.frame_botoes, text=f"Passo 0 de {len(self.passos)-1}", font=(FONTE_TXT, 10))
         self.lbl_status.pack(side="bottom")
         
         # Renderizar o estado inicial
@@ -178,17 +181,17 @@ class AppBuscaBinaria:
             
             # Textos internos do bloco
             txt_funcao = f"busca_binaria(inicio={dados['inicio']+1}, fim={dados['fim']+1})"
-            self.canvas_pilha.create_text(x1 + 15, y1 + 20, anchor="w", text=txt_funcao, font=("Arial", 11, "bold"), fill="black")
+            self.canvas_pilha.create_text(x1 + 15, y1 + 20, anchor="w", text=txt_funcao, font=(FONTE_TXT, 11, "bold"), fill="black")
             
             if dados['meio'] is not None:
                 txt_detalhe = f"Meio calculado: índice {dados['meio']} (valor {self.vetor[dados['meio']]})"
             else:
                 txt_detalhe = "Verificando limites..."
-            self.canvas_pilha.create_text(x1 + 15, y1 + 40, anchor="w", text=txt_detalhe, font=("Arial", 10), fill="#222")
+            self.canvas_pilha.create_text(x1 + 15, y1 + 40, anchor="w", text=txt_detalhe, font=(FONTE_TXT, 10), fill="#222")
             
             # Tag de Status do bloco
-            self.canvas_pilha.create_text(x2 - 15, y1 + 20, anchor="e", text=texto_status, font=("Arial", 9, "italic"), fill="black")
-            self.canvas_pilha.create_text(x2 - 15, y1 + 45, anchor="e", text=f"Nível {nivel}", font=("Courier", 12, "bold"), fill="#333")
+            self.canvas_pilha.create_text(x2 - 15, y1 + 20, anchor="e", text=texto_status, font=(FONTE_TXT, 9, "italic"), fill="black")
+            self.canvas_pilha.create_text(x2 - 15, y1 + 45, anchor="e", text=f"Nível {nivel}", font=(FONTE_TXT, 12, "bold"), fill="#333")
 
     def proximo_passo(self):
         if self.passo_atual < len(self.passos) - 1:

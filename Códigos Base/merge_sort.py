@@ -14,29 +14,29 @@ def copiar(vetor, inicio, fim):
 
     return v
 
-def merge(ord_esq, tam_esq, ord_dir, tam_dir):
-    ord = array.array("i", [0]*(tam_esq + tam_dir))
+def merge(o_esq, tam_esq, o_dir, tam_dir):
+    o = array.array("i", [0]*(tam_esq + tam_dir))
 
     i = 0
     j = 0
 
     while (i < tam_esq and j < tam_dir):
-        if (ord_esq[i] < ord_dir[j]):
-            ord[i+j] = ord_esq[i]
+        if (o_esq[i] < o_dir[j]):
+            o[i+j] = o_esq[i]
             i += 1
         else:
-            ord[i+j] = ord_dir[j]
+            o[i+j] = o_dir[j]
             j += 1
 
     while (i < tam_esq):
-        ord[i+j] = ord_esq[i]
+        o[i+j] = o_esq[i]
         i += 1
 
     while (j < tam_dir):
-        ord[i+j] = ord_dir[j]
+        o[i+j] = o_dir[j]
         j += 1
 
-    return ord
+    return o
 
     
 def merge_sort(vetor, fim):
@@ -47,10 +47,10 @@ def merge_sort(vetor, fim):
     v_esq = copiar(vetor, 0, meio)
     v_dir = copiar(vetor, meio, fim)
 
-    ord_esq = merge_sort(v_esq, meio)
-    ord_dir = merge_sort(v_dir, meio + (fim % 2))
+    o_esq = merge_sort(v_esq, meio)
+    o_dir = merge_sort(v_dir, meio + (fim % 2))
 
-    return merge(ord_esq, meio, ord_dir, meio + (fim % 2))
+    return merge(o_esq, meio, o_dir, meio + (fim % 2))
     
 
 vetor = array.array("i", [0]*6)
@@ -63,9 +63,10 @@ vetor[4] = 9
 vetor[5] = 1
     
 
+print("\nVETOR PRÉ O MERGE_SORT")
+print("-"*30)
 imprimir_vetor(vetor, 6)
 
-print("\n")
-#imprimir_vetor(merge_sort(vetor, 6), 6)
-
-print(merge_sort(vetor, 6))
+print("\nVETOR PÓS O MERGE_SORT")
+print("-"*30)
+imprimir_vetor(merge_sort(vetor, 6), 6)
