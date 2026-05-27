@@ -1,439 +1,284 @@
 import tkinter as tk
 
-BG           = "#FFFFFF"
-BLACK = "#000000"
-PANEL_BG     = "#F1F1F1"
-HEADER_FG    = "#E2E8F0"
-MUTED_FG     = "#64748B"
-BORDER       = "#2D2D44"
-ROW_NORMAL   = "#F1F1F1"
-ROW_ACTIVE   = "#1E3A5F"
-BASE_ROW     = "#0D3321"
-BADGE_BG     = "#2D2D60"
-BADGE_FG     = "#A5B4FC"
-BASE_BADGE   = "#14532D"
-BASE_BADGE_FG= "#86EFAC"
-QMARK_FG     = "#334155"
-FILLED_FG    = "#34D399"
-ACCENT       = "#4ADE80"
-ACCENT_HOV   = "#44A869"
-BTN_SEC      = "#FFFFFF"
-ACTIVE_TEXT  = "#F1F5F9"
-LEGEND_BG    = "#0D1117"
-LEGEND_FG    = "#CBD5E1"
+BG          = "#FFFFFF"
+BLACK       = "#111111"
+MUTED_FG    = "#888888"
+BORDER      = "#E0E0E0"
+
+# Tabela — header
+HDR_BG      = "#F5F5F5"
+HDR_FG      = "#333333"
+
+# Linha normal (ainda não revelada / não ativa)
+ROW_BG      = "#F9F9F9"
+ROW_FG      = "#AAAAAA"   # texto esmaecido
+
+# Linha resolvida (desempilhada) — verde escuro
+DONE_BG     = "#1B5E3B"
+DONE_FG     = "#6EE7A0"
+
+# Linha ativa — verde claro (mint)
+ACTIVE_BG   = "#E8F8EF"
+ACTIVE_FG   = "#1B5E3B"
+ACTIVE_BD   = "#3BB06A"
+
+#escondido
+HIDDEN = "#FFFFFF"
+
+# Badge ETAPA
+BADGE_FG    = "#3BB06A"
+
+# Botões
+BTN_GHOST_BG  = "#FFFFFF"
+BTN_GHOST_FG  = "#333333"
+BTN_GHOST_BD  = "#CCCCCC"
+BTN_GREEN_BG  = "#3BB06A"
+BTN_GREEN_FG  = "#FFFFFF"
+BTN_GREEN_HOV = "#2E9A5A"
 
 FONTE_HEAD = "Cabinet Grotesk"
-FONTE_TXT = "Inter"
+FONTE = "Inter"
 
-# ═══════════════════════════════════════════════════════════
-#  CONTEÚDO
-# ═══════════════════════════════════════════════════════════
-ETAPA1_LINHAS = [
-    ("5", "fatorial(0)", "retorna 1", "#86EFAC"),  # linha 0 — topo da tela, fundo da pilha
-    ("4", "fatorial(1)", "1 × ?",     "#A5B4FC"),  # linha 1
-    ("3", "fatorial(2)", "2 × ?",     "#A5B4FC"),  # linha 2
-    ("2", "fatorial(3)", "3 × ?",     "#A5B4FC"),  # linha 3
-    ("1", "fatorial(4)", "4 × ?",     "#A5B4FC"),  # linha 4 — fundo da tela, topo da pilha
+W, H = 820, 540
+
+def fatorial(n):
+    if n <= 1:
+        return 1
+    return n * fatorial(n - 1)
+
+E1_PASSOS = [
+    # passo 0 — estado inicial (nada revelado)
+    [
+        ("4", "fatorial(1)", "Retorna 1",     "hidden"),
+        ("3", "fatorial(2)", "2 × ?",     "hidden"),
+        ("2", "fatorial(3)", "3 × ?",     "hidden"),
+        ("1", "fatorial(4)", "4 × ?",     "hidden"),
+    ],
+    # passo 1 — revela fatorial(4) (idx 4)
+    [
+        ("4", "fatorial(1)", "Retorna 1",     "hidden"),
+        ("3", "fatorial(2)", "2 × ?",     "hidden"),
+        ("2", "fatorial(3)", "3 × ?",     "hidden"),
+        ("1", "fatorial(4)", "4 × ?",     "active"),
+    ],
+    # passo 2
+    [
+        ("4", "fatorial(1)", "Retorna 1",     "hidden"),
+        ("3", "fatorial(2)", "2 × ?",     "hidden"),
+        ("2", "fatorial(3)", "3 × ?",     "active"),
+        ("1", "fatorial(4)", "4 × ?",     "waiting"),
+    ],
+    # passo 3
+    [
+        ("4", "fatorial(1)", "Retorna 1",     "hidden"),
+        ("3", "fatorial(2)", "2 × ?",     "active"),
+        ("2", "fatorial(3)", "3 × ?",     "waiting"),
+        ("1", "fatorial(4)", "4 × ?",     "waiting"),
+    ],
+    # passo 4
+    [
+        ("4", "fatorial(1)", "Retorna 1",     "active"),
+        ("3", "fatorial(2)", "2 × ?",     "waiting"),
+        ("2", "fatorial(3)", "3 × ?",     "waiting"),
+        ("1", "fatorial(4)", "4 × ?",     "waiting"),
+    ],
 ]
 
-# Revelação de baixo pra cima: fatorial(4) primeiro (índice 4), fatorial(0) por último (índice 0)
-ORDEM_REVELACAO = [4, 3, 2, 1, 0]
+# Etapa 2 — desempilhamento
+E2_PASSOS = [
 
-ETAPA1_COMENTARIOS = [
-    "fatorial(0) é o CASO BASE — não faz chamada recursiva. Retorna 1 imediatamente. A recursão para aqui!",  # idx 0
-    "fatorial(1) é empilhada acima — pausa e aguarda fatorial(0).",                                            # idx 1
-    "fatorial(2) entra na pilha — pausa e espera o resultado de fatorial(1).",                                 # idx 2
-    "fatorial(3) é empilhada — também não pode terminar sozinha, precisa de fatorial(2). Fica pausada.",       # idx 3
-    "fatorial(4) é a primeira chamada — precisa de fatorial(3) para continuar, fica pausada na pilha.",        # idx 4
+    # passo 1 — fatorial(1) resolve
+    [
+        ("4", "fatorial(1)", "Retorna 1", "done"),
+        ("3", "fatorial(2)", "2 × ?",       "waiting"),
+        ("2", "fatorial(3)", "3 × ?",       "waiting"),
+        ("1", "fatorial(4)", "4 × ?",       "waiting"),
+    ],
+    # passo 2 — fatorial(1) done, fatorial(2) resolve
+    [
+        ("4", "fatorial(1)", "Retorna 1", "done"),
+        ("3", "fatorial(2)", "2×1 = 2",     "active"),
+        ("2", "fatorial(3)", "3 × ?",       "waiting"),
+        ("1", "fatorial(4)", "4 × ?",       "waiting"),
+    ],
+    # passo 3
+    [
+        ("4", "fatorial(1)", "Retorna 1", "done"),
+        ("3", "fatorial(2)", "Retorna 2",   "done"),
+        ("2", "fatorial(3)", "3×2 = 6",     "active"),
+        ("1", "fatorial(4)", "4 × ?",       "waiting"),
+    ],
+    # passo 4 — final
+    [
+        ("4", "fatorial(1)", "Retorna 1", "done"),
+        ("3", "fatorial(2)", "Retorna 2",   "done"),
+        ("2", "fatorial(3)", "Retorna 6",   "done"),
+        ("1", "fatorial(4)", "4×6 = 24 ✓", "active"),
+    ],
 ]
 
-ETAPA2_PASSOS = [
-    # resolve do topo da tela (fatorial(0), idx 0) descendo até fatorial(4) (idx 4)
-    (1, "1", "fatorial(1) recebe 1 de volta  →  calcula 1 × 1 = 1  →  desempilha."),
-    (2, "1", "fatorial(2) recebe 1 de volta  →  calcula 2 × 1 = 2  →  desempilha."),
-    (3, "2", "fatorial(3) recebe 2 de volta  →  calcula 3 × 2 = 6  →  desempilha."),
-    (4, "6", "fatorial(4) recebe 6 de volta  →  calcula 4 × 6 = 24  →  pilha vazia! ✓"),
-]
-
-COL_W   = [70, 260, 230]
-HEADERS = ["Ordem", "Chamada atual", "O que ficou guardado"]
-W, H    = 860, 640
+COL_W   = [100, 280, 260]
+HEADERS = ["Ordem", "Chamada atual", "Retorno"]
 
 
-# ═══════════════════════════════════════════════════════════
-#  APLICAÇÃO
-# ═══════════════════════════════════════════════════════════
 class App:
     def __init__(self, root):
         self.root = root
-        root.title("Visualizador da Call Stack — Fatorial Recursivo")
+        root.title("Call Stack — Fatorial Recursivo")
         root.configure(bg=BG)
         root.resizable(False, False)
         cx = (root.winfo_screenwidth()  - W) // 2
         cy = (root.winfo_screenheight() - H) // 2
         root.geometry(f"{W}x{H}+{cx}+{cy}")
-        self._show_etapa1()
+        self._show(1, E1_PASSOS, 0)
 
-    # ───────────────────────────────────────────────────────
-    #  ETAPA 1
-    # ───────────────────────────────────────────────────────
-    def _show_etapa1(self):
+    def _show(self, etapa, passos, passo_idx):
         self._clear()
-        self.passo = 0
+        self.etapa     = etapa
+        self.passos    = passos
+        self.passo_idx = passo_idx
+        total          = len(passos) - 1   
 
-        frm_top = tk.Frame(self.root, bg=BG)
-        frm_top.pack(fill="x", padx=40, pady=(30, 0))
-        tk.Label(frm_top, text="ETAPA  1", font=(FONTE_TXT, 11, "bold"),
-                 bg=BG, fg=ACCENT).pack(anchor="w")
-        tk.Label(frm_top, text="Empilhando chamadas",
-                 font=(FONTE_HEAD, 22, "bold"), bg=BG, fg=BLACK).pack(anchor="w")
-        tk.Label(frm_top,
-                 text="Quando a função chama outra, ela fica pausada e vai para a pilha.",
-                 font=(FONTE_TXT, 12), bg=BG, fg=MUTED_FG).pack(anchor="w", pady=(4, 0))
+        # ── CARD PRINCIPAL ──────────────────────────────
+        outer = tk.Frame(self.root, bg=BG)
+        outer.pack(fill="both", expand=True, padx=48, pady=36)
 
-        tk.Frame(self.root, bg=BORDER, height=1).pack(fill="x", padx=40, pady=16)
+        # Header card
+        card_hdr = tk.Frame(outer, bg=BG, highlightbackground=BORDER,
+                            highlightthickness=1)
+        card_hdr.pack(fill="x")
 
-        # Tabela
-        self.frm_table = tk.Frame(self.root, bg=BG)
-        self.frm_table.pack(padx=40, fill="x")
+        tk.Label(card_hdr,
+                 text="Pilha de chamadas  fatorial de 4",
+                 font=(FONTE_HEAD, 16, "bold"), bg=BG, fg=BLACK,
+                 anchor="w", padx=20, pady=16).pack(side="left")
 
-        for col, (h, w) in enumerate(zip(HEADERS, COL_W)):
-            cell = tk.Frame(self.frm_table, bg=PANEL_BG, width=w, height=36)
-            cell.grid(row=0, column=col, padx=(0, 2), pady=(0, 2))
+        tk.Label(card_hdr,
+                 text=f"ETAPA {etapa}",
+                 font=(FONTE, 11, "bold"), bg=BG, fg=BADGE_FG,
+                 anchor="e", padx=20).pack(side="right")
+
+        tk.Frame(outer, bg=BG, height=20).pack()  # spacer
+
+        # ── TABELA ──────────────────────────────────────
+        tbl = tk.Frame(outer, bg=BG, highlightbackground=BORDER,
+                       highlightthickness=1)
+        tbl.pack(fill="x")
+
+        # Header row
+        for col, (h, cw) in enumerate(zip(HEADERS, COL_W)):
+            cell = tk.Frame(tbl, bg=HDR_BG, width=cw, height=40,
+                            highlightbackground=BORDER, highlightthickness=1)
+            cell.grid(row=0, column=col, sticky="nsew")
             cell.pack_propagate(False)
-            tk.Label(cell, text=h, font=(FONTE_TXT, 11, "bold"),
-                     bg=PANEL_BG, fg=BLACK, anchor="w", padx=12).pack(fill="both", expand=True)
+            tk.Label(cell, text=h, font=(FONTE, 11, "bold"),
+                     bg=HDR_BG, fg=HDR_FG,
+                     anchor="w" if col == 0 else "center",
+                     padx=16).pack(fill="both", expand=True)
 
-        self.row_frames = []
-        self.val_labels = []
-
-        for i, (ordem, chamada, guardado, _) in enumerate(ETAPA1_LINHAS):
-            is_base = i == 0  # fatorial(0) agora é a primeira linha
-            row_bg  = BASE_ROW if is_base else ROW_NORMAL
-            cells   = []
-            for col in range(3):
-                c = tk.Frame(self.frm_table, bg=BG, width=COL_W[col], height=48)
-                c.grid(row=i + 1, column=col, padx=(0, 2), pady=(0, 2))
-                c.pack_propagate(False)
-                cells.append(c)
-
-            tk.Label(cells[0], text=ordem, font=(FONTE_TXT, 14),
-                     bg=BG, fg=BG, anchor="w", padx=16).pack(fill="both", expand=True)
-
-            b_bg = BASE_BADGE    if is_base else BADGE_BG
-            b_fg = BASE_BADGE_FG if is_base else BADGE_FG
-            outer = tk.Frame(cells[1], bg=BG)
-            outer.pack(side="left", padx=14, pady=10)
-            tk.Label(outer, text=f"  {chamada}  ", font=(FONTE_TXT, 13, "bold"),
-                     bg=BG, fg=BG, padx=6, pady=3).pack()
-
-            if is_base:
-                tk.Label(cells[2], text=guardado, font=(FONTE_TXT, 13, "bold"),
-                         bg=BG, fg=BG, anchor="w", padx=14).pack(fill="both", expand=True)
-                self.val_labels.append(None)
+        # Data rows
+        estado_atual = passos[passo_idx]
+        for row_i, (ordem, chamada, guardado, estado) in enumerate(estado_atual):
+            if estado == "done":
+                rbg, rfg, bd = DONE_BG, DONE_FG, DONE_BG
+            elif estado == "active":
+                rbg, rfg, bd = ACTIVE_BG, ACTIVE_FG, ACTIVE_BD
+            elif estado == "hidden":   
+                rbg, rfg, bd = HIDDEN, HIDDEN, HIDDEN
             else:
-                prefix = guardado[:-1]
-                inner = tk.Frame(cells[2], bg=BG)
-                inner.pack(fill="both", expand=True, padx=14)
-                tk.Label(inner, text=prefix, font=(FONTE_TXT, 13),
-                         bg=BG, fg=BG).pack(side="left", pady=14)
-                lv = tk.Label(inner, text="?", font=(FONTE_TXT, 13, "bold"),
-                              bg=BG, fg=BG)
-                lv.pack(side="left", pady=14)
-                self.val_labels.append(lv)
+                rbg, rfg, bd = ROW_BG, ROW_FG, BORDER
 
-            self.row_frames.append((cells, row_bg))
+            for col in range(3):
+                cell = tk.Frame(tbl, bg=rbg, width=COL_W[col], height=50,
+                                highlightbackground=bd, highlightthickness=1)
+                cell.grid(row=row_i + 1, column=col, sticky="nsew")
+                cell.pack_propagate(False)
 
-        # Legenda
-        tk.Frame(self.root, bg=BORDER, height=1).pack(fill="x", padx=40, pady=(14, 0))
-        self.lbl_legend = tk.Label(
-            self.root,
-            text="Pressione  ▶ Avançar  para revelar a primeira chamada.",
-            font=(FONTE_TXT, 12, "italic"), bg=LEGEND_BG, fg=LEGEND_FG,
-            wraplength=760, justify="left", anchor="w", padx=20, pady=12,
-        )
-        self.lbl_legend.pack(fill="x", padx=40, pady=(8, 0))
-
-        # Contador de passos
-        self.lbl_step = tk.Label(
-            self.root,
-            text=f"Passo  0 / {len(ETAPA1_LINHAS)}",
-            font=(FONTE_TXT, 11), bg=BG, fg=MUTED_FG,
-        )
-        self.lbl_step.pack(pady=(6, 0))
-
-        # Botões
-        frm_btn = tk.Frame(self.root, bg=BG)
-        frm_btn.pack(pady=14)
-
-        self.btn_main = tk.Button(
-            frm_btn, text="▶  Avançar",
-            font=(FONTE_TXT, 13, "bold"),
-            bg=ACCENT, fg="white",
-            activebackground=ACCENT_HOV, activeforeground="white",
-            relief="flat", padx=24, pady=8, cursor="hand2",
-            command=self._avancar_e1,
-        )
-        self.btn_main.pack(side="left", padx=8)
-
-        tk.Button(
-            frm_btn, text="↺  Reiniciar",
-            font=(FONTE_TXT, 12), bg=BTN_SEC, fg=HEADER_FG,
-            activebackground="#334155", relief="flat",
-            padx=18, pady=8, cursor="hand2",
-            command=self._show_etapa1,
-        ).pack(side="left", padx=8)
-
-    def _avancar_e1(self):
-        p = self.passo
-
-        if p >= len(ORDEM_REVELACAO):
-            return
-
-        i = ORDEM_REVELACAO[p]          # índice real da linha a revelar
-        cells, row_bg = self.row_frames[i]
-
-        # Remove destaque da linha anterior
-        if p > 0:
-            prev_i = ORDEM_REVELACAO[p - 1]
-            prev_cells, prev_bg = self.row_frames[prev_i]
-            for c in prev_cells:
-                c.configure(bg=prev_bg)
-                for w in c.winfo_children():
-                    self._set_bg_tree(w, prev_bg)
-            lv_prev = self.val_labels[prev_i]
-            if lv_prev:
-                lv_prev.config(bg=prev_bg, fg=QMARK_FG)
-
-        # Revela e destaca linha atual
-        for c in cells:
-            c.configure(bg=ROW_ACTIVE)
-            for w in c.winfo_children():
-                self._set_bg_tree(w, ROW_ACTIVE)
-
-        # Ajusta cores dos textos
-        lv = self.val_labels[i]
-        if lv:
-            lv.config(fg=QMARK_FG, bg=ROW_ACTIVE)
-
-        # Corrige textos que estavam invisíveis (fg=BG)
-        self._reveal_row_text(i)
-
-        self.lbl_legend.config(text=ETAPA1_COMENTARIOS[i], fg=LEGEND_FG)
-        self.passo += 1
-        self.lbl_step.config(text=f"Passo  {self.passo} / {len(ETAPA1_LINHAS)}")
-
-        # Último passo: troca botão
-        if self.passo == len(ETAPA1_LINHAS):
-            self.lbl_legend.config(
-                text="✓  Todas as chamadas foram empilhadas. A recursão chegou ao caso base!\n"
-                     "Pressione  Próxima etapa  para ver o desempilhamento.",
-                fg=FILLED_FG,
-            )
-            self.btn_main.config(
-                text="Próxima etapa  →",
-                bg="#059669", activebackground="#047857",
-                command=self._show_etapa2,
-            )
-
-    def _reveal_row_text(self, i):
-        """Torna os widgets de texto visíveis na linha i."""
-        cells, _ = self.row_frames[i]
-        is_base  = i == 0
-
-        # col 0 – número da ordem
-        for w in cells[0].winfo_children():
-            try: w.config(fg=MUTED_FG)
-            except: pass
-
-        # col 1 – badge
-        for outer in cells[1].winfo_children():
-            b_fg = BASE_BADGE_FG if is_base else BADGE_FG
-            b_bg = BASE_BADGE    if is_base else BADGE_BG
-            for lbl in outer.winfo_children():
-                try: lbl.config(fg=b_fg, bg=b_bg)
-                except: pass
-            try: outer.config(bg=ROW_ACTIVE)
-            except: pass
-
-        # col 2 – valor guardado
-        lv = self.val_labels[i]
-        for inner in cells[2].winfo_children():
-            try: inner.config(bg=ROW_ACTIVE)
-            except: pass
-            for w in inner.winfo_children():
-                try:
-                    if w is lv:
-                        w.config(fg=QMARK_FG, bg=ROW_ACTIVE)
-                    elif is_base:
-                        w.config(fg=BASE_BADGE_FG, bg=ROW_ACTIVE)
+                if col == 0:
+                    tk.Label(cell, text=ordem,
+                             font=(FONTE, 14, "bold"),
+                             bg=rbg, fg=rfg,
+                             anchor="center").pack(fill="both", expand=True)
+                elif col == 1:
+                    tk.Label(cell, text=chamada,
+                             font=(FONTE, 13, "bold"),
+                             bg=rbg, fg=rfg,
+                             anchor="center").pack(fill="both", expand=True)
+                else:
+                    # col 2 — destaca o resultado calculado em verde
+                    if estado == "active" and "=" in guardado:
+                        # split em " = "
+                        parts = guardado.split(" = ")
+                        inner = tk.Frame(cell, bg=rbg)
+                        inner.place(relx=0.5, rely=0.5, anchor="center")
+                        tk.Label(inner, text=parts[0] + " = ",
+                                 font=(FONTE, 13), bg=rbg, fg=rfg
+                                 ).pack(side="left")
+                        tk.Label(inner, text=parts[1],
+                                 font=(FONTE, 13, "bold"), bg=rbg,
+                                 fg=ACTIVE_BD).pack(side="left")
                     else:
-                        w.config(fg=ACTIVE_TEXT, bg=ROW_ACTIVE)
-                except: pass
+                        tk.Label(cell, text=guardado,
+                                 font=(FONTE, 13,
+                                       "bold" if estado in ("done","active") else "normal"),
+                                 bg=rbg, fg=rfg,
+                                 anchor="center").pack(fill="both", expand=True)
 
-    # ───────────────────────────────────────────────────────
-    #  ETAPA 2
-    # ───────────────────────────────────────────────────────
-    def _show_etapa2(self):
-        self._clear()
-        self.passo = 0
+        tk.Frame(outer, bg=BG, height=28).pack()  # spacer
 
-        frm_top = tk.Frame(self.root, bg=BG)
-        frm_top.pack(fill="x", padx=40, pady=(30, 0))
-        tk.Label(frm_top, text="ETAPA  2", font=(FONTE_TXT, 11, "bold"),
-                 bg=BG, fg="#34D399").pack(anchor="w")
-        tk.Label(frm_top, text="Preenchendo os retornos",
-                 font=(FONTE_HEAD, 22, "bold"), bg=BG, fg=HEADER_FG).pack(anchor="w")
-        tk.Label(frm_top,
-                 text="fatorial(0) retorna 1 — o valor sobe resolvendo cada chamada pausada.",
-                 font=(FONTE_TXT, 12), bg=BG, fg=MUTED_FG).pack(anchor="w", pady=(4, 0))
+        # ── BARRA DE NAVEGAÇÃO ───────────────────────────
+        nav = tk.Frame(outer, bg=BG)
+        nav.pack(fill="x")
 
-        tk.Frame(self.root, bg=BORDER, height=1).pack(fill="x", padx=40, pady=16)
-
-        self.frm_table = tk.Frame(self.root, bg=BG)
-        self.frm_table.pack(padx=40, fill="x")
-
-        for col, (h, w) in enumerate(zip(HEADERS, COL_W)):
-            cell = tk.Frame(self.frm_table, bg=PANEL_BG, width=w, height=36)
-            cell.grid(row=0, column=col, padx=(0, 2), pady=(0, 2))
-            cell.pack_propagate(False)
-            tk.Label(cell, text=h, font=(FONTE_TXT, 11, "bold"),
-                     bg=PANEL_BG, fg=MUTED_FG, anchor="w", padx=12).pack(fill="both", expand=True)
-
-        self.row_frames2 = []
-        self.val_labels2 = []
-
-        for i, (ordem, chamada, guardado, _) in enumerate(ETAPA1_LINHAS):
-            is_base = i == 0  # fatorial(0) é a primeira linha
-            row_bg  = BASE_ROW if is_base else ROW_NORMAL
-            cells   = []
-            for col in range(3):
-                c = tk.Frame(self.frm_table, bg=row_bg, width=COL_W[col], height=48)
-                c.grid(row=i + 1, column=col, padx=(0, 2), pady=(0, 2))
-                c.pack_propagate(False)
-                cells.append(c)
-
-            tk.Label(cells[0], text=ordem, font=(FONTE_TXT, 14),
-                     bg=row_bg, fg=MUTED_FG, anchor="w", padx=16).pack(fill="both", expand=True)
-
-            b_bg = BASE_BADGE    if is_base else BADGE_BG
-            b_fg = BASE_BADGE_FG if is_base else BADGE_FG
-            outer = tk.Frame(cells[1], bg=row_bg)
-            outer.pack(side="left", padx=14, pady=10)
-            tk.Label(outer, text=f"  {chamada}  ", font=(FONTE_TXT, 13, "bold"),
-                     bg=b_bg, fg=b_fg, padx=6, pady=3).pack()
-
-            if is_base:
-                tk.Label(cells[2], text=guardado, font=(FONTE_TXT, 13, "bold"),
-                         bg=row_bg, fg=BASE_BADGE_FG, anchor="w", padx=14).pack(fill="both", expand=True)
-                self.val_labels2.append(None)
-            else:
-                prefix = guardado[:-1]
-                inner = tk.Frame(cells[2], bg=row_bg)
-                inner.pack(fill="both", expand=True, padx=14)
-                tk.Label(inner, text=prefix, font=(FONTE_TXT, 13),
-                         bg=row_bg, fg=ACTIVE_TEXT).pack(side="left", pady=14)
-                lv = tk.Label(inner, text="?", font=(FONTE_TXT, 13, "bold"),
-                              bg=row_bg, fg=QMARK_FG)
-                lv.pack(side="left", pady=14)
-                self.val_labels2.append(lv)
-
-            self.row_frames2.append((cells, row_bg))
-
-        # Legenda
-        tk.Frame(self.root, bg=BORDER, height=1).pack(fill="x", padx=40, pady=(14, 0))
-        self.lbl_legend = tk.Label(
-            self.root,
-            text="Pressione  ▶ Avançar  para desempilhar o primeiro retorno.",
-            font=(FONTE_TXT, 12, "italic"), bg=LEGEND_BG, fg=LEGEND_FG,
-            wraplength=760, justify="left", anchor="w", padx=20, pady=12,
+        # Botão ← Passo Anterior
+        btn_prev = tk.Button(
+            nav, text="←  Passo Anterior",
+            font=(FONTE, 12),
+            bg=BTN_GHOST_BG, fg=BTN_GHOST_FG,
+            activebackground="#F0F0F0", activeforeground=BLACK,
+            relief="solid", bd=1, padx=20, pady=10,
+            cursor="hand2" if passo_idx > 0 else "arrow",
+            state="normal" if passo_idx > 0 else "disabled",
+            command=lambda: self._nav(-1),
         )
-        self.lbl_legend.pack(fill="x", padx=40, pady=(8, 0))
+        btn_prev.pack(side="left")
 
-        self.lbl_step = tk.Label(
-            self.root,
-            text=f"Passo  0 / {len(ETAPA2_PASSOS)}",
-            font=(FONTE_TXT, 11), bg=BG, fg=MUTED_FG,
+        # Passo X de Y — centro
+        lbl_mid = tk.Label(
+            nav,
+            text=f"Passo {passo_idx} de {total}",
+            font=(FONTE, 12), bg=BG, fg=MUTED_FG,
         )
-        self.lbl_step.pack(pady=(6, 0))
+        lbl_mid.pack(side="left", expand=True)
 
-        frm_btn = tk.Frame(self.root, bg=BG)
-        frm_btn.pack(pady=14)
+        # Botão Próximo Passo →  /  Próxima Etapa  /  Recomeçar
+        is_last_e1 = (etapa == 1 and passo_idx == total)
+        is_last_e2 = (etapa == 2 and passo_idx == total)
 
-        self.btn_main = tk.Button(
-            frm_btn, text="▶  Avançar",
-            font=(FONTE_TXT, 13, "bold"),
-            bg=ACCENT, fg="white",
-            activebackground=ACCENT_HOV, activeforeground="white",
-            relief="flat", padx=24, pady=8, cursor="hand2",
-            command=self._avancar_e2,
-        )
-        self.btn_main.pack(side="left", padx=8)
+        if is_last_e2:
+            btn_lbl = "↺  Recomeçar"
+            btn_cmd = lambda: self._show(1, E1_PASSOS, 0)
+        elif is_last_e1:
+            btn_lbl = "Próxima Etapa  →"
+            btn_cmd = lambda: self._show(2, E2_PASSOS, 0)
+        else:
+            btn_lbl = "Próximo Passo  →"
+            btn_cmd = lambda: self._nav(+1)
 
         tk.Button(
-            frm_btn, text="↺  Recomeçar do início",
-            font=(FONTE_TXT, 12), bg=BTN_SEC, fg=HEADER_FG,
-            activebackground="#334155", relief="flat",
-            padx=18, pady=8, cursor="hand2",
-            command=self._show_etapa1,
-        ).pack(side="left", padx=8)
+            nav, text=btn_lbl,
+            font=(FONTE, 12, "bold"),
+            bg=BTN_GREEN_BG, fg=BTN_GREEN_FG,
+            activebackground=BTN_GREEN_HOV, activeforeground=BTN_GREEN_FG,
+            relief="flat", padx=24, pady=10,
+            cursor="hand2",
+            command=btn_cmd,
+        ).pack(side="right")
 
-    def _avancar_e2(self):
-        p = self.passo
-
-        # Remove destaque anterior
-        if p > 0:
-            prev_idx = ETAPA2_PASSOS[p - 1][0]
-            prev_cells, prev_bg = self.row_frames2[prev_idx]
-            for c in prev_cells:
-                c.configure(bg=prev_bg)
-                for w in c.winfo_children():
-                    self._set_bg_tree(w, prev_bg)
-            lv = self.val_labels2[prev_idx]
-            if lv:
-                lv.config(bg=prev_bg)
-
-        if p >= len(ETAPA2_PASSOS):
-            return
-
-        idx, valor, msg = ETAPA2_PASSOS[p]
-        cells, _ = self.row_frames2[idx]
-
-        for c in cells:
-            c.configure(bg=ROW_ACTIVE)
-            for w in c.winfo_children():
-                self._set_bg_tree(w, ROW_ACTIVE)
-
-        lv = self.val_labels2[idx]
-        if lv:
-            lv.config(text=valor, fg=FILLED_FG, bg=ROW_ACTIVE)
-
-        self.lbl_legend.config(text=msg, fg=LEGEND_FG)
-        self.passo += 1
-        self.lbl_step.config(text=f"Passo  {self.passo} / {len(ETAPA2_PASSOS)}")
-
-        if self.passo == len(ETAPA2_PASSOS):
-            self.lbl_legend.config(
-                text="✓  Pilha vazia!  Resultado final:  4! = 4 × 3 × 2 × 1 = 24",
-                fg=FILLED_FG,
-            )
-            self.btn_main.config(
-                text="↺  Recomeçar do início",
-                bg=BTN_SEC, fg=HEADER_FG,
-                activebackground="#334155",
-                command=self._show_etapa1,
-            )
-
-    # ───────────────────────────────────────────────────────
-    #  UTILIDADES
-    # ───────────────────────────────────────────────────────
-    def _set_bg_tree(self, widget, color):
-        try:
-            widget.configure(bg=color)
-        except tk.TclError:
-            pass
-        for child in widget.winfo_children():
-            self._set_bg_tree(child, color)
+    def _nav(self, delta):
+        new_idx = self.passo_idx + delta
+        new_idx = max(0, min(new_idx, len(self.passos) - 1))
+        self._show(self.etapa, self.passos, new_idx)
 
     def _clear(self):
         for w in self.root.winfo_children():
