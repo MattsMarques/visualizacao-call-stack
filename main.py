@@ -3,11 +3,14 @@ import subprocess
 import sys
 import os
 
-COR_FUNDO = "#eaeaea"
+COR_FUNDO = "#F1F1F1"
 COR_CARD_BG = "#ffffff"
 COR_VERDE = "#4ADE80"  
 COR_TEXTO_ESCURO = "#000000"
 COR_TEXTO_MUTED = "#666666"
+
+FONTE_TITULO = "Cabinet Grotesk"
+FONTE_TEXTO = "Switzer"
 
 class AppHub:
     def __init__(self, root):
@@ -21,8 +24,8 @@ class AppHub:
         
         self.arquivos = {
             1: "./visualizadores/visualizador_fatorial.py",
-            2: "./visualizadores/vizualizador_merge_sort.py",       
-            3: "./visualizadores/vizualizador_busca_binaria.py"
+            2: "./visualizadores/visualizador_merge_sort.py",       
+            3: "./visualizadores/visualizador_busca_binaria.py"
         }
         
         self.construir_interface()
@@ -32,7 +35,7 @@ class AppHub:
         self.lbl_titulo = tk.Label(
             self.root, 
             text="O QUE DESEJA FAZER?", 
-            font=("Helvetica", 28, "bold"), 
+            font=(FONTE_TITULO, 28, "bold"), 
             bg=COR_FUNDO, 
             fg=COR_TEXTO_ESCURO
         )
@@ -41,7 +44,7 @@ class AppHub:
         self.lbl_subtitulo = tk.Label(
             self.root, 
             text="Selecione o algoritmo recursivo de sua preferência.", 
-            font=("Helvetica", 14), 
+            font=(FONTE_TEXTO, 14), 
             bg=COR_FUNDO, 
             fg=COR_TEXTO_MUTED
         )
@@ -58,27 +61,27 @@ class AppHub:
         self.card1 = tk.Frame(frame_cards, bg=COR_CARD_BG, width=largura_card, height=altura_card, highlightthickness=2, highlightbackground="#dddddd")
         self.card1.pack_propagate(False)
         self.card1.pack(side=tk.LEFT, padx=15)
-        self.lbl_ico1 = tk.Label(self.card1, text="n!", font=("Helvetica", 38), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
+        self.lbl_ico1 = tk.Label(self.card1, text="n!", font=(FONTE_TEXTO, 38), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
         self.lbl_ico1.pack(expand=True, pady=(20, 0))
-        self.lbl_txt1 = tk.Label(self.card1, text="Fatorial", font=("Helvetica", 14, "bold"), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
+        self.lbl_txt1 = tk.Label(self.card1, text="Fatorial", font=(FONTE_TEXTO, 14, "bold"), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
         self.lbl_txt1.pack(expand=True, pady=(0, 20))
 
         # CARD 2: Merge Sort
         self.card2 = tk.Frame(frame_cards, bg=COR_CARD_BG, width=largura_card, height=altura_card, highlightthickness=2, highlightbackground="#dddddd")
         self.card2.pack_propagate(False)
         self.card2.pack(side=tk.LEFT, padx=15)
-        self.lbl_ico2 = tk.Label(self.card2, text="⇄", font=("Helvetica", 38), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
+        self.lbl_ico2 = tk.Label(self.card2, text="⇄", font=(FONTE_TEXTO, 38), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
         self.lbl_ico2.pack(expand=True, pady=(20, 0))
-        self.lbl_txt2 = tk.Label(self.card2, text="Merge Sort", font=("Helvetica", 14, "bold"), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
+        self.lbl_txt2 = tk.Label(self.card2, text="Merge Sort", font=(FONTE_TEXTO, 14, "bold"), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
         self.lbl_txt2.pack(expand=True, pady=(0, 20))
 
         # CARD 3: Busca Binária
         self.card3 = tk.Frame(frame_cards, bg=COR_CARD_BG, width=largura_card, height=altura_card, highlightthickness=2, highlightbackground="#dddddd")
         self.card3.pack_propagate(False)
         self.card3.pack(side=tk.LEFT, padx=15)
-        self.lbl_ico3 = tk.Label(self.card3, text="🔍", font=("Helvetica", 38), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
+        self.lbl_ico3 = tk.Label(self.card3, text="🔍", font=(FONTE_TEXTO, 38), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
         self.lbl_ico3.pack(expand=True, pady=(20, 0))
-        self.lbl_txt3 = tk.Label(self.card3, text="Busca Binária", font=("Helvetica", 14, "bold"), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
+        self.lbl_txt3 = tk.Label(self.card3, text="Busca Binária", font=(FONTE_TEXTO, 14, "bold"), bg=COR_CARD_BG, fg=COR_TEXTO_ESCURO)
         self.lbl_txt3.pack(expand=True, pady=(0, 20))
 
         self.vincular_clique(self.card1, self.lbl_ico1, self.lbl_txt1, 1)
@@ -88,10 +91,10 @@ class AppHub:
         self.btn_proximo = tk.Button(
             self.root, 
             text="Próximo", 
-            font=("Helvetica", 14, "bold"), 
+            font=(FONTE_TEXTO, 14, "bold"), 
             bg=COR_VERDE, 
-            fg="#ffffff",          # texto branco para melhor contraste
-            activebackground="#259b47",
+            fg="#ffffff",          
+            activebackground=COR_VERDE,
             activeforeground="#ffffff",
             bd=0, 
             padx=40, 

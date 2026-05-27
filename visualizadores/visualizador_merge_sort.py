@@ -1,32 +1,23 @@
-"""
-Visualizador de Call Stack — Merge Sort
-Fiel ao código original: merge_sort, copiar, merge
-Design: light, limpo, call stack como pilha literal
-"""
-
 import tkinter as tk
 from tkinter import ttk
 import array
 
-# ══════════════════════════════════════════════════════════════
-#  PALETA  (light, editorial, monoespaçado)
-# ══════════════════════════════════════════════════════════════
-FUNDO        = "#F7F6F2"      # creme quase branco
+FUNDO        = "#F1F1F1"     
 PAPEL        = "#FFFFFF"
-BORDA        = "#E0DDD6"
-BORDA_FORTE  = "#B8B4AC"
+BORDA        = "#E0E0E0"
+BORDA_FORTE  = "#B6B6B6"
 
-CINZA_TEXTO  = "#2C2A25"
-CINZA_MEDIO  = "#6B6760"
-CINZA_LEVE   = "#A8A49E"
-CINZA_BG     = "#EEECE7"
+CINZA_TEXTO  = "#303030"
+CINZA_MEDIO  = "#696969"
+CINZA_LEVE   = "#A8A8A8"
+CINZA_BG     = "#F1F1F1"
 
-# cores de destaque por tipo de evento
-COR_CALL   = "#1A56DB"   # azul
-COR_COPIAR = "#7E3AF2"   # roxo
-COR_BASE   = "#0E9F6E"   # verde
-COR_MERGE  = "#E3A008"   # âmbar
-COR_RET    = "#C81E1E"   # vermelho
+
+COR_CALL   = "#4ADE80"  
+COR_COPIAR = "#7E3AF2" 
+COR_BASE   = "#0E9F6E"   
+COR_MERGE  = "#E3A008"  
+COR_RET    = "#C81E1E"   
 
 COR_CALL_BG   = "#EBF5FF"
 COR_COPIAR_BG = "#F5F3FF"
@@ -34,8 +25,8 @@ COR_BASE_BG   = "#F3FAF7"
 COR_MERGE_BG  = "#FFFBEB"
 COR_RET_BG    = "#FDF2F2"
 
-FONTE_MONO = "Courier New"
-FONTE_SANS = "Georgia"
+FONTE_MONO = "Cabinet Grotesk"
+FONTE_SANS = "Switzer"
 
 
 # ══════════════════════════════════════════════════════════════
