@@ -10,7 +10,7 @@ COR_TEXTO_ESCURO = "#000000"
 COR_TEXTO_MUTED = "#666666"
 
 FONTE_TITULO = "Cabinet Grotesk"
-FONTE_TEXTO = "Switzer"
+FONTE_TEXTO = "Inter"
 
 class AppHub:
     def __init__(self, root):
